@@ -1,37 +1,748 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CookControl - Automação Comercial</title>
-    <script src="https://tailwindcss.com"></script>
-    <link href="https://googleapis.com" rel="stylesheet">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title id="page-title">Sistema de Gestão</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#1e3a8a"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="CookControl"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+<!-- SUPABASE SYNC -->
+<!-- ATENÇÃO: chaves como PLACEHOLDER — nunca fixas aqui. Antes de publicar
+     pra um cliente, substitua __SUPABASE_URL__ e __SUPABASE_ANON_KEY__
+     pelos valores REAIS do projeto Supabase daquele cliente específico
+     (Project Settings → API, no painel do Supabase). Nunca reutilize a
+     chave antiga da demonstração da Barraca aqui. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  var SUPABASE_URL = "__SUPABASE_URL__";
+  var SUPABASE_KEY = "__SUPABASE_ANON_KEY__";
+  var SYNC_MAP = {
+    "wl_pedidos_v1":   "pedidos_cozinha",
+    "wl_delivery_v1":  "pedidos_delivery",
+    "wl_config_v1":    "config_estabelecimento",
+    "wl_categorias_v1":"cardapio_categorias",
+    "wl_estoque_v1":   "estoque_itens"
+  };
+  var _sb = null, _online = false;
+  function _init(){
+    try{
+      if(typeof supabase==="undefined"||!supabase.createClient) return;
+      if(SUPABASE_URL.indexOf("__SUPABASE")===0){
+        console.warn("[Sync] Chaves do Supabase ainda não configuradas — substitua os placeholders antes de publicar.");
+        return;
+      }
+      _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      _online = true;
+      console.log("[Sync] ✅ Supabase conectado");
+      _pullRemote();
+    }catch(e){ console.warn("[Sync] offline:", e.message); }
+  }
+  async function _push(key,val){
+    if(!_sb||!_online) return;
+    var tabela=SYNC_MAP[key]; if(!tabela) return;
+    try{
+      var { error }=await _sb.from(tabela).upsert({chave:key,dados:val,atualizado_em:new Date().toISOString()},{onConflict:"chave"});
+      if(error) console.warn("[Sync] Push erro:",error.message);
+    }catch(e){ console.warn("[Sync] Push falhou:",e.message); }
+  }
+  async function _pullRemote(){
+    if(!_sb) return;
+    for(var key in SYNC_MAP){
+      var localVal=localStorage.getItem("wl_"+key);
+      if(localVal!==null) continue;
+      try{
+        var tabela=SYNC_MAP[key];
+        var { data, error }=await _sb.from(tabela).select("dados").eq("chave",key).maybeSingle();
+        if(!error&&data&&data.dados!==undefined) localStorage.setItem("wl_"+key,JSON.stringify(data.dados));
+      }catch(e){}
+    }
+  }
+  window.addEventListener("load",function(){
+    _init();
+    var _orig=window.salvar;
+    if(typeof _orig!=="function"){ console.warn("[Sync] salvar() não encontrada"); return; }
+    window.salvar=function(key,val){ _orig(key,val); _push(key,val); };
+  });
+  window.SupaSync={ status:function(){ return _online?"online":"offline"; } };
+})();
+</script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:#1e3a5f;overflow-x:hidden}
+.serif{font-family:'Playfair Display',serif}
+
+/* ── COR PRIMÁRIA: Azul Marinho (substituí laranja) ── */
+:root{
+  --cor-pri: #1e3a8a;    /* blue-900  */
+  --cor-sec: #1d4ed8;    /* blue-700  */
+  --cor-acc: #3b82f6;    /* blue-500  */
+  --cor-bg:  #eff6ff;    /* blue-50   */
+}
+
+/* NAV TABS */
+.nav-tab{padding:10px 16px;font-size:.76rem;font-weight:700;cursor:pointer;border-bottom:2.5px solid transparent;color:#6b7280;transition:all .18s;white-space:nowrap;text-transform:uppercase;letter-spacing:.03em;flex-shrink:0}
+.nav-tab.active{color:var(--cor-pri);border-color:var(--cor-pri)}
+#nav-main::-webkit-scrollbar{display:none}
+#nav-arrow-left,#nav-arrow-right{display:flex!important;opacity:0;pointer-events:none;transition:opacity .2s;z-index:40!important}
+#nav-arrow-left.nav-arr-vis,#nav-arrow-right.nav-arr-vis{opacity:1;pointer-events:auto!important}
+
+/* SW arrows genéricas */
+.sw-wrap{position:relative;display:block}
+.sw-wrap .sw-inner{scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.sw-wrap .sw-inner::-webkit-scrollbar{display:none}
+.sw-btn{position:absolute;top:0;bottom:0;z-index:30;width:34px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;font-size:1.1rem;font-weight:900;color:var(--cor-pri);padding:0;opacity:0;pointer-events:none;transition:opacity .2s}
+.sw-btn.sw-l{left:0;background:linear-gradient(to right,rgba(255,255,255,.97) 55%,transparent)}
+.sw-btn.sw-r{right:0;background:linear-gradient(to left,rgba(255,255,255,.97) 55%,transparent)}
+.sw-btn.sw-vis{opacity:1;pointer-events:auto}
+
+/* HEADER */
+.hdr{background:linear-gradient(150deg,#0f2f52 0%,var(--cor-pri) 60%,#0f2340 100%);position:relative;overflow:hidden}
+.wave{position:absolute;bottom:-1px;left:0;right:0;height:36px;background:#f0f2f5;clip-path:ellipse(55% 100% at 50% 100%)}
+
+/* BOTÕES PRIMÁRIOS */
+.btn-pri{background:var(--cor-pri);color:#fff;border:none;border-radius:12px;padding:10px 18px;font-size:.82rem;font-weight:700;cursor:pointer;transition:opacity .15s}
+.btn-pri:hover{opacity:.88}
+.btn-sec{background:var(--cor-bg);color:var(--cor-pri);border:1.5px solid var(--cor-acc);border-radius:12px;padding:10px 18px;font-size:.82rem;font-weight:700;cursor:pointer}
+
+/* CARDS */
+.admin-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px;margin-bottom:14px}
+
+/* CAT SCROLL */
+.cat-scroll::-webkit-scrollbar{height:0}
+
+/* TOAST */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a8a;color:#fff;padding:10px 22px;border-radius:99px;font-size:.82rem;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 16px rgba(30,58,138,.25)}
+</style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-['DM_Sans']">
+<body>
 
-    <div class="min-h-screen flex flex-col justify-center items-center p-6">
-        <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center border border-gray-100">
-            <h1 class="text-3xl font-bold font-['Playfair_Display'] text-orange-600 mb-2">CookControl</h1>
-            <p class="text-gray-500 mb-6 text-sm">Ambiente de Configuração Padrão</p>
-            
-            <div class="bg-orange-50 border border-orange-100 rounded-xl p-4 mb-6">
-                <p class="text-orange-800 text-sm font-medium">✨ Sistema Pronto para Novo Cliente</p>
-                <p class="text-orange-600 text-xs mt-1">Insira os dados particulares no painel de administração para ativar o cardápio e as mesas.</p>
-            </div>
+<!-- ═══ HEADER ═══ -->
+<header class="hdr pt-8 pb-14 px-4 text-white text-center">
+  <div class="max-w-xl mx-auto">
+    <p style="font-size:.7rem;font-weight:800;color:#93c5fd;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">Sistema de Gestão</p>
+    <h1 class="serif text-white leading-tight" id="lbl-nome-estabelecimento"
+      style="font-size:1.9rem;text-shadow:0 2px 16px rgba(0,0,0,.5)">Meu Estabelecimento</h1>
+    <p style="color:#bfdbfe;font-size:.78rem;margin-top:6px" id="lbl-localizacao">Localização</p>
+    <div class="flex items-center justify-center gap-2 mt-3 flex-wrap">
+      <span style="font-size:.72rem;font-weight:700;padding:4px 12px;border-radius:999px;background:rgba(147,197,253,.2);color:#bfdbfe;border:1.5px solid rgba(147,197,253,.4)">🕐 <span id="lbl-horario">Horário</span></span>
+      <span id="lbl-whatsapp-hdr" style="font-size:.72rem;font-weight:700;padding:4px 12px;border-radius:999px;background:rgba(147,197,253,.2);color:#bfdbfe;border:1.5px solid rgba(147,197,253,.4);display:none">📱 WhatsApp</span>
+    </div>
+  </div>
+  <div class="wave"></div>
+</header>
 
-            <div class="space-y-3">
-                <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
-                    <span class="text-xs font-bold text-gray-400 block uppercase tracking-wider">Status do Banco de Dados</span>
-                    <span class="text-sm font-medium text-emerald-600 flex items-center mt-0.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-                        Supabase Conectado (Limpo)
-                    </span>
-                </div>
-            </div>
-            
-            <p class="text-xs text-gray-400 mt-8">CookControl &copy; 2026 - Todos os direitos reservados.</p>
+<!-- ═══ ROLE BADGE ═══ -->
+<div class="sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
+  <div style="max-width:56rem;margin:0 auto;padding:6px 16px;display:flex;align-items:center;justify-content:space-between">
+    <span id="lbl-role-badge" style="font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:8px;background:var(--cor-bg);color:var(--cor-pri)">👤 Visitante</span>
+    <button onclick="SirAccess&&SirAccess.logout()" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:#6b7280;font-weight:700;opacity:.7">Sair ↩</button>
+  </div>
+
+  <!-- NAVEGAÇÃO -->
+  <div id="nav-main-wrapper" style="position:relative;overflow:hidden">
+    <button id="nav-arrow-left" onclick="document.getElementById('nav-main').scrollBy({left:-120,behavior:'smooth'})"
+      style="position:absolute;left:0;top:0;bottom:0;z-index:40;width:48px;background:linear-gradient(to right,rgba(255,255,255,1) 65%,transparent);border:none;cursor:pointer;align-items:center;justify-content:center;font-size:1.5rem;color:var(--cor-pri);padding:0;font-weight:900">‹</button>
+    <div id="nav-main" class="flex items-center gap-1 overflow-x-auto"
+      style="scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:0 48px">
+      <button class="nav-tab active" data-view="cardapio"  onclick="showView('cardapio',this)">🍽️ Cardápio</button>
+      <button class="nav-tab"        data-view="mesas"     onclick="showView('mesas',this)">🪑 <span class="wl-unidade-plural">Mesas</span></button>
+      <button class="nav-tab"        data-view="atendente" onclick="showView('atendente',this)">🧑‍💼 Atendente</button>
+      <button class="nav-tab"        data-view="cozinha"   onclick="showView('cozinha',this)">👨‍🍳 Cozinha</button>
+      <button class="nav-tab"        data-view="delivery"  onclick="showView('delivery',this)">🛵 Delivery</button>
+      <button class="nav-tab"        data-view="estoque2"  onclick="showView('estoque2',this)">📦 Estoque</button>
+      <button class="nav-tab"        data-view="caixa"     onclick="showView('caixa',this)">💰 Caixa</button>
+      <button class="nav-tab"        data-view="relatorio" onclick="showView('relatorio',this)">📊 Relatórios</button>
+      <button class="nav-tab"        data-view="dashboard" onclick="showView('dashboard',this)">📈 Dashboard</button>
+      <button class="nav-tab"        data-view="admin"     onclick="showView('admin',this)">⚙️ Admin</button>
+      <button class="nav-tab"        data-view="cliente"   onclick="showView('cliente',this)" style="display:none">📱 Cliente</button>
+    </div>
+    <button id="nav-arrow-right" onclick="document.getElementById('nav-main').scrollBy({left:120,behavior:'smooth'})"
+      style="position:absolute;right:0;top:0;bottom:0;z-index:40;width:48px;background:linear-gradient(to left,rgba(255,255,255,1) 65%,transparent);border:none;cursor:pointer;align-items:center;justify-content:center;font-size:1.5rem;color:var(--cor-pri);padding:0;font-weight:900">›</button>
+  </div><!-- /nav-main-wrapper -->
+</div><!-- /sticky nav -->
+
+<!-- ═══ VIEWS ═══ -->
+<main id="main-content" class="max-w-5xl mx-auto px-4 py-6">
+
+  <!-- VIEW: CARDÁPIO -->
+  <div id="view-cardapio" class="pb-32">
+    <div class="admin-card text-center" style="background:var(--cor-bg);border-color:#bfdbfe">
+      <p style="color:var(--cor-pri);font-size:.88rem;font-weight:700;margin-bottom:4px">📋 Cardápio vazio</p>
+      <p style="color:#6b7280;font-size:.78rem">Acesse <strong>⚙️ Admin</strong> para configurar o estabelecimento e adicionar produtos.</p>
+    </div>
+    <div id="cat-nav" class="cat-scroll flex gap-2 overflow-x-auto pb-1 mt-4"></div>
+    <div id="cardapio-grid" class="mt-4"></div>
+  </div>
+
+  <!-- VIEW: MESAS -->
+  <div id="view-mesas" class="hidden pb-32">
+    <div class="admin-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 style="font-weight:800;font-size:1rem;color:var(--cor-pri)">🪑 <span class="wl-unidade-plural">Mesas</span></h2>
+        <button class="btn-pri" onclick="wlNovaComanda()" style="font-size:.75rem;padding:7px 14px">+ Nova Comanda</button>
+      </div>
+      <div id="mesas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px"></div>
+    </div>
+  </div>
+
+  <!-- VIEW: ATENDENTE -->
+  <div id="view-atendente" class="hidden pb-32">
+    <div class="admin-card">
+      <h2 style="font-weight:800;font-size:1rem;color:var(--cor-pri);margin-bottom:14px">🧑‍💼 Painel do Atendente</h2>
+      <div id="atendente-content"><p style="color:#9ca3af;font-size:.84rem">Selecione uma <span class="wl-unidade">mesa</span> para gerenciar o pedido.</p></div>
+    </div>
+  </div>
+
+  <!-- VIEW: COZINHA -->
+  <div id="view-cozinha" class="hidden pb-32">
+    <div class="admin-card">
+      <h2 style="font-weight:800;font-size:1rem;color:var(--cor-pri);margin-bottom:14px">👨‍🍳 Cozinha / KDS</h2>
+      <div id="cozinha-content"><p style="color:#9ca3af;font-size:.84rem">Nenhum pedido em preparo.</p></div>
+    </div>
+  </div>
+
+  <!-- VIEW: DELIVERY -->
+  <div id="view-delivery" class="hidden pb-32">
+    <div class="admin-card">
+      <h2 style="font-weight:800;font-size:1rem;color:var(--cor-pri);margin-bottom:14px">🛵 Delivery</h2>
+      <div id="delivery-content"><p style="color:#9ca3af;font-size:.84rem">Nenhum pedido de delivery.</p></div>
+    </div>
+  </div>
+
+  <!-- VIEW: ESTOQUE -->
+  <div id="view-estoque2" class="hidden pb-32">
+    <div class="admin-card">
+      <h2 style="font-weight:800;font-size:1rem;color:var(--cor-pri);margin-bottom:14px">📦 Estoque</h2>
+      <div class="flex gap-2 overflow-x-auto pb-1 mb-4" style="scrollbar-width:none">
+        <button class="btn-pri" style="font-size:.72rem;padding:6px 14px;white-space:nowrap" onclick="wlEstoqueTab('insumos',this)">🧂 Insumos</button>
+        <button class="btn-sec" style="font-size:.72rem;padding:6px 14px;white-space:nowrap" onclick="wlEstoqueTab('fichas',this)">📋 Fichas Técnicas</button>
+        <button class="btn-sec" style="font-size:.72rem;padding:6px 14px;white-space:nowrap" onclick="wlEstoqueTab('movimentos',this)">📥 Entradas/Baixas</button>
+      </div>
+      <div id="estoque-content"><p style="color:#9ca3af;font-size:.84rem">Estoque vazio. Cadastre insumos para começar.</p></div>
+    </div>
+  </div>
+
+  <!-- VIEW: CAIXA -->
+  <div id="view-caixa" class="hidden pb-32">
+    <div class="admin-card">
+      <h2 style="font-weight:800;font-size:1rem;color:var(--cor-pri);margin-bottom:14px">💰 Caixa</h2>
+      <div id="caixa-content"><p style="color:#9ca3af;font-size:.84rem">Nenhum lançamento registrado.</p></div>
+    </div>
+  </div>
+
+  <!-- VIEW: RELATÓRIOS -->
+  <div id="view-relatorio" class="hidden pb-32">
+    <div class="admin-card">
+      <h2 style="font-weight:800;font-size:1rem;color:var(--cor-pri);margin-bottom:14px">📊 Relatórios</h2>
+      <div id="relatorio-content"><p style="color:#9ca3af;font-size:.84rem">Sem dados ainda.</p></div>
+    </div>
+  </div>
+
+  <!-- VIEW: DASHBOARD -->
+  <div id="view-dashboard" class="hidden pb-32">
+    <div class="admin-card">
+      <h2 style="font-weight:800;font-size:1rem;color:var(--cor-pri);margin-bottom:14px">📈 Dashboard</h2>
+      <div id="dashboard-content"><p style="color:#9ca3af;font-size:.84rem">Sem dados ainda.</p></div>
+    </div>
+  </div>
+
+  <!-- VIEW: CLIENTE -->
+  <div id="view-cliente" class="hidden pb-32">
+    <div class="admin-card">
+      <h2 style="font-weight:800;font-size:1rem;color:var(--cor-pri);margin-bottom:14px">📱 Cardápio do Cliente</h2>
+      <div id="cliente-content"></div>
+    </div>
+  </div>
+
+  <!-- VIEW: ADMIN ═══════════════════════════════════════ -->
+  <div id="view-admin" class="hidden pb-32">
+
+    <!-- ── IDENTIDADE ── -->
+    <div class="admin-card">
+      <h3 style="font-weight:800;font-size:.9rem;color:var(--cor-pri);margin-bottom:14px">🏪 Identidade do Estabelecimento</h3>
+      <div style="display:grid;gap:12px">
+
+        <div>
+          <label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:4px">NOME DO ESTABELECIMENTO</label>
+          <input id="adm-nome" type="text" placeholder="Ex: Restaurante Bela Vista"
+            style="width:100%;border:1.5px solid #d1d5db;border-radius:10px;padding:9px 12px;font-size:.85rem"
+            oninput="wlPreviewNome(this.value)">
         </div>
+
+        <div>
+          <label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:4px">LOCALIZAÇÃO / ENDEREÇO</label>
+          <input id="adm-local" type="text" placeholder="Ex: Rua das Flores, 123 · São Paulo SP"
+            style="width:100%;border:1.5px solid #d1d5db;border-radius:10px;padding:9px 12px;font-size:.85rem">
+        </div>
+
+        <div>
+          <label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:4px">HORÁRIO DE FUNCIONAMENTO</label>
+          <input id="adm-horario" type="text" placeholder="Ex: Seg–Sex · 11h–23h"
+            style="width:100%;border:1.5px solid #d1d5db;border-radius:10px;padding:9px 12px;font-size:.85rem">
+        </div>
+
+        <div>
+          <label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:4px">WHATSAPP (com DDD)</label>
+          <input id="adm-whatsapp" type="tel" placeholder="Ex: 71999999999"
+            style="width:100%;border:1.5px solid #d1d5db;border-radius:10px;padding:9px 12px;font-size:.85rem">
+        </div>
+
+        <button class="btn-pri" onclick="wlSalvarIdentidade()" style="align-self:start">💾 Salvar Identidade</button>
+      </div>
     </div>
 
+    <!-- ── TIPO DE UNIDADE ── -->
+    <div class="admin-card">
+      <h3 style="font-weight:800;font-size:.9rem;color:var(--cor-pri);margin-bottom:6px">🏷️ Tipo de Unidade (substitui "Mesa" em todo o sistema)</h3>
+      <p style="font-size:.74rem;color:#9ca3af;margin-bottom:14px">Escolha ou personalize o nome da unidade de atendimento.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button onclick="wlSetUnidade('Mesa')"      class="btn-sec" style="font-size:.75rem;padding:6px 14px">🪑 Mesa</button>
+        <button onclick="wlSetUnidade('Quarto')"    class="btn-sec" style="font-size:.75rem;padding:6px 14px">🛏️ Quarto</button>
+        <button onclick="wlSetUnidade('Cabana')"    class="btn-sec" style="font-size:.75rem;padding:6px 14px">🛖 Cabana</button>
+        <button onclick="wlSetUnidade('Guarda-sol')"class="btn-sec" style="font-size:.75rem;padding:6px 14px">⛱️ Guarda-sol</button>
+        <button onclick="wlSetUnidade('Bangalô')"   class="btn-sec" style="font-size:.75rem;padding:6px 14px">🏡 Bangalô</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="adm-unidade-custom" type="text" placeholder="Personalizar (ex: Poltrona, Área, Box)"
+          style="flex:1;border:1.5px solid #d1d5db;border-radius:10px;padding:8px 12px;font-size:.82rem">
+        <button class="btn-pri" style="font-size:.76rem;padding:8px 14px;white-space:nowrap"
+          onclick="wlSetUnidade(document.getElementById('adm-unidade-custom').value)">Aplicar</button>
+      </div>
+      <p style="font-size:.74rem;color:#6b7280;margin-top:10px">Atual: <strong id="lbl-unidade-atual">Mesa</strong></p>
+    </div>
+
+    <!-- ── QR CODES ── -->
+    <div class="admin-card">
+      <h3 style="font-weight:800;font-size:.9rem;color:var(--cor-pri);margin-bottom:14px">🔲 QR Codes por <span class="wl-unidade">Mesa</span></h3>
+      <div id="admin-qr-panel">
+        <button class="btn-pri" onclick="wlGerarQRCodes()" style="margin-bottom:14px">Gerar QR Codes</button>
+        <div id="qr-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px"></div>
+      </div>
+    </div>
+
+    <!-- ── NÚMERO DE UNIDADES ── -->
+    <div class="admin-card">
+      <h3 style="font-weight:800;font-size:.9rem;color:var(--cor-pri);margin-bottom:12px">🔢 Número de <span class="wl-unidade-plural">Mesas</span></h3>
+      <div style="display:flex;align-items:center;gap:12px">
+        <input id="adm-num-unidades" type="number" min="1" max="200" value="10"
+          style="width:80px;border:1.5px solid #d1d5db;border-radius:10px;padding:8px 12px;font-size:.9rem;text-align:center">
+        <button class="btn-pri" onclick="wlSalvarNumUnidades()" style="font-size:.76rem;padding:8px 14px">Salvar</button>
+      </div>
+    </div>
+
+    <!-- ── RESET (novo cliente) ── -->
+    <div class="admin-card" style="border-color:#fca5a5">
+      <h3 style="font-weight:800;font-size:.9rem;color:#dc2626;margin-bottom:8px">⚠️ Resetar para novo cliente</h3>
+      <p style="font-size:.76rem;color:#6b7280;margin-bottom:14px">Remove todos os dados: produtos, pedidos, histórico, estoque, caixa. Mantém a estrutura.</p>
+      <button onclick="wlResetarTudo()"
+        style="background:#fef2f2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:10px;padding:9px 18px;font-size:.8rem;font-weight:700;cursor:pointer">
+        🗑 Apagar tudo e começar do zero
+      </button>
+    </div>
+
+  </div><!-- /view-admin -->
+
+</main>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   WHITE LABEL — Sistema de Gestão
+   Banco zerado · Identidade dinâmica · Tipo de unidade global
+   ══════════════════════════════════════════════════════════════ */
+
+var WL_PREFIX = "wl_";
+
+/* ── STORAGE ── */
+function salvar(key, val){
+  try{ localStorage.setItem(WL_PREFIX + key, JSON.stringify(val)); }catch(e){}
+}
+function carregar(key, def){
+  try{
+    var v = localStorage.getItem(WL_PREFIX + key);
+    return v !== null ? JSON.parse(v) : def;
+  }catch(e){ return def; }
+}
+
+/* ── CONFIG BASE ── */
+var CONFIG_DEFAULT = {
+  nome:        "Meu Estabelecimento",
+  local:       "Localização",
+  horario:     "Seg–Dom · 10h–22h",
+  whatsapp:    "",
+  numUnidades: 10,
+  tipoUnidade: "Mesa"
+};
+
+var config     = carregar("config_v1", CONFIG_DEFAULT);
+var categorias = carregar("categorias_v1", []);  // banco zerado
+var pedidos    = carregar("pedidos_v1",    []);   // banco zerado
+var historico  = carregar("historico_v1",  []);   // banco zerado
+var insumos    = carregar("insumos_v1",    []);   // banco zerado
+var movimentos = carregar("movimentos_v1", []);   // banco zerado
+var mesaStatus = carregar("mesaStatus_v1", {});   // banco zerado
+var FICHAS     = carregar("fichas_v1",     {});   // banco zerado
+
+/* ── TOAST ── */
+function toast(msg, dur){
+  var t = document.getElementById("toast");
+  if(!t) return;
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(t._tid);
+  t._tid = setTimeout(function(){ t.style.display = "none"; }, dur||2400);
+}
+
+/* ── SHOW VIEW ── */
+var _viewAtual = "cardapio";
+function showView(name, btn){
+  document.querySelectorAll("[id^='view-']").forEach(function(el){
+    el.classList.toggle("hidden", el.id !== "view-" + name);
+  });
+  document.querySelectorAll(".nav-tab").forEach(function(b){ b.classList.remove("active"); });
+  if(btn) btn.classList.add("active");
+  _viewAtual = name;
+  if(name === "mesas")     wlRenderMesas();
+  if(name === "admin")     wlCarregarAdmin();
+  if(name === "cardapio")  wlRenderCardapio();
+  if(typeof window._navArrowUpdate === "function") setTimeout(window._navArrowUpdate, 80);
+  if(typeof window._swAplicarTodos  === "function") setTimeout(window._swAplicarTodos, 300);
+}
+
+/* ── APLICAR IDENTIDADE NO DOM ── */
+function wlAplicarIdentidade(){
+  var c = config;
+  document.title = c.nome || "Sistema de Gestão";
+  var el;
+  if((el=document.getElementById("lbl-nome-estabelecimento"))) el.textContent = c.nome || "Meu Estabelecimento";
+  if((el=document.getElementById("lbl-localizacao")))          el.textContent = c.local || "";
+  if((el=document.getElementById("lbl-horario")))              el.textContent = c.horario || "";
+  if((el=document.getElementById("lbl-whatsapp-hdr"))){
+    if(c.whatsapp){ el.textContent = "📱 " + c.whatsapp; el.style.display = ""; }
+    else { el.style.display = "none"; }
+  }
+  wlAplicarUnidade(c.tipoUnidade || "Mesa");
+}
+
+function wlPreviewNome(val){
+  var el = document.getElementById("lbl-nome-estabelecimento");
+  if(el) el.textContent = val || "Meu Estabelecimento";
+  document.title = val || "Sistema de Gestão";
+}
+
+/* ── SALVAR IDENTIDADE ── */
+function wlSalvarIdentidade(){
+  config.nome     = document.getElementById("adm-nome").value.trim()     || config.nome;
+  config.local    = document.getElementById("adm-local").value.trim()    || config.local;
+  config.horario  = document.getElementById("adm-horario").value.trim()  || config.horario;
+  config.whatsapp = document.getElementById("adm-whatsapp").value.trim() || "";
+  salvar("config_v1", config);
+  wlAplicarIdentidade();
+  toast("✅ Identidade salva!");
+}
+
+/* ── TIPO DE UNIDADE ── */
+function wlAplicarUnidade(tipo){
+  if(!tipo || !tipo.trim()) return;
+  tipo = tipo.trim();
+  config.tipoUnidade = tipo;
+  document.querySelectorAll(".wl-unidade").forEach(function(el){ el.textContent = tipo; });
+  var plural = tipo;
+  var last   = tipo.toLowerCase().slice(-1);
+  if(last === "a") plural = tipo.slice(0,-1) + "as";
+  else if(last === "o") plural = tipo.slice(0,-1) + "os";
+  else plural = tipo + "s";
+  document.querySelectorAll(".wl-unidade-plural").forEach(function(el){ el.textContent = plural; });
+  var lbl = document.getElementById("lbl-unidade-atual");
+  if(lbl) lbl.textContent = tipo;
+}
+
+function wlSetUnidade(tipo){
+  if(!tipo || !tipo.trim()){ toast("⚠️ Informe o nome da unidade"); return; }
+  wlAplicarUnidade(tipo);
+  salvar("config_v1", config);
+  toast("✅ Unidade atualizada: " + tipo);
+}
+
+/* ── NÚMERO DE UNIDADES ── */
+function wlSalvarNumUnidades(){
+  var n = parseInt(document.getElementById("adm-num-unidades").value) || 10;
+  config.numUnidades = Math.max(1, Math.min(200, n));
+  salvar("config_v1", config);
+  toast("✅ " + config.numUnidades + " " + (config.tipoUnidade||"Mesa") + "s configuradas");
+}
+
+/* ── RENDER MESAS ── */
+function wlRenderMesas(){
+  var grid = document.getElementById("mesas-grid");
+  if(!grid) return;
+  var n    = config.numUnidades || 10;
+  var tipo = config.tipoUnidade || "Mesa";
+  var html = "";
+  for(var i = 1; i <= n; i++){
+    var st  = (mesaStatus[i] || "livre");
+    var cor = st === "ocupada" ? "#dc2626" : st === "conta" ? "#d97706" : "#16a34a";
+    var bg  = st === "ocupada" ? "#fef2f2" : st === "conta" ? "#fffbeb" : "#f0fdf4";
+    html += '<div onclick="wlAbrirMesa(' + i + ')" style="background:' + bg + ';border:1.5px solid ' + cor + ';border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;transition:.15s" '
+          + 'onmouseover="this.style.opacity=\'.85\'" onmouseout="this.style.opacity=\'1\'">'
+          + '<div style="font-size:1.2rem;margin-bottom:4px">'
+          + (st==="ocupada"?"🔴":st==="conta"?"🟡":"🟢")
+          + '</div>'
+          + '<div style="font-weight:700;font-size:.78rem;color:' + cor + '">' + tipo + ' ' + String(i).padStart(2,"0") + '</div>'
+          + '<div style="font-size:.65rem;color:#9ca3af;text-transform:uppercase;margin-top:2px">' + st + '</div>'
+          + '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function wlAbrirMesa(n){
+  var tipo = config.tipoUnidade || "Mesa";
+  mesaStatus[n] = mesaStatus[n] === "livre" ? "ocupada" : "livre";
+  salvar("mesaStatus_v1", mesaStatus);
+  wlRenderMesas();
+  toast(tipo + " " + String(n).padStart(2,"0") + ": " + mesaStatus[n]);
+}
+
+function wlNovaComanda(){
+  toast("Para iniciar uma comanda, selecione uma " + (config.tipoUnidade||"mesa") + " disponível.");
+}
+
+/* ── RENDER CARDÁPIO ── */
+function wlRenderCardapio(){
+  var grid = document.getElementById("cardapio-grid");
+  if(!grid) return;
+  if(!categorias.length){
+    grid.innerHTML = '<div class="admin-card text-center" style="background:var(--cor-bg);border-color:#bfdbfe">'
+      + '<p style="color:var(--cor-pri);font-size:.84rem;font-weight:700">🍽️ Nenhum produto cadastrado</p>'
+      + '<p style="color:#6b7280;font-size:.74rem;margin-top:4px">Vá em <strong>⚙️ Admin</strong> para criar categorias e produtos.</p></div>';
+    return;
+  }
+  var temPrecoDual = categorias.some(function(cat){ return (cat.itens||[]).some(function(it){ return it.preco_restaurante!==undefined && it.preco_restaurante!==it.preco_p1; }); });
+  var topo = temPrecoDual
+    ? '<div style="text-align:right;margin-bottom:10px">'
+      + '<button id="btn-modo-preco" onclick="wlAlternarModoPreco()" class="btn-sec" style="font-size:.72rem;padding:6px 14px">'
+      + ((config.modo_preco==="restaurante")?"🍽️ Cardápio: Preço 2":"🏖️ Cardápio: Preço 1") + '</button></div>'
+    : '';
+  grid.innerHTML = topo + categorias.map(function(cat){
+    var itensAtivos = (cat.itens||[]).filter(function(it){ return it.ativo!==false && !it.pausado; });
+    if(!itensAtivos.length) return "";
+    return '<div style="margin-bottom:20px">'
+      + '<h3 style="font-weight:800;font-size:.82rem;color:var(--cor-pri);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">'
+      + (cat.icone||"🍽️") + " " + cat.nome + '</h3>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">'
+      + itensAtivos.map(function(it){
+          var preco = _wlPrecoAtual(it);
+          return '<div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;padding:14px;display:flex;gap:12px;align-items:center">'
+            + (it.img ? '<img src="'+it.img+'" style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0" onerror="this.outerHTML=\'<div style=&quot;width:52px;height:52px;border-radius:10px;background:var(--cor-bg);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0&quot;>'+(it.icone||cat.icone||"🍽️")+'</div>\'"/>' : '<div style="width:52px;height:52px;border-radius:10px;background:var(--cor-bg);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">'+(it.icone||cat.icone||"🍽️")+'</div>')
+            + '<div style="flex:1;min-width:0">'
+            + '<div style="font-weight:700;font-size:.84rem;color:#0f2340">' + it.nome + '</div>'
+            + (it.desc ? '<div style="font-size:.72rem;color:#9ca3af;margin-top:2px">' + it.desc + '</div>' : '')
+            + '<div style="font-size:.88rem;font-weight:800;color:var(--cor-pri);margin-top:4px">' + _fmtMoeda(preco) + '</div>'
+            + '</div></div>';
+        }).join("")
+      + '</div></div>';
+  }).join("");
+}
+
+/* ── ESTOQUE TABS ── */
+function wlEstoqueTab(aba, btn){
+  document.querySelectorAll("#view-estoque2 .btn-pri, #view-estoque2 .btn-sec").forEach(function(b){
+    b.className = "btn-sec";
+    b.style.cssText = "font-size:.72rem;padding:6px 14px;white-space:nowrap";
+  });
+  if(btn){ btn.className = "btn-pri"; btn.style.cssText = "font-size:.72rem;padding:6px 14px;white-space:nowrap"; }
+  var c = document.getElementById("estoque-content");
+  if(!c) return;
+  if(aba === "insumos"){
+    c.innerHTML = insumos.length
+      ? insumos.map(function(ins){
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f3f4f6">'
+            + '<div><div style="font-weight:600;font-size:.84rem">' + ins.nome + '</div>'
+            + '<div style="font-size:.72rem;color:#9ca3af">' + (ins.categoria||"") + ' · R$ ' + (ins.custo||0).toFixed(2) + '/'+ins.unidade+'</div></div>'
+            + '<div style="font-weight:700;color:var(--cor-pri);font-size:.88rem">' + (ins.qtd||0).toFixed(2) + ' ' + ins.unidade + '</div></div>';
+        }).join("")
+      : '<p style="color:#9ca3af;font-size:.84rem">Nenhum insumo cadastrado.</p>';
+  } else if(aba === "fichas"){
+    var fichasHtml = Object.keys(FICHAS).length
+      ? Object.keys(FICHAS).map(function(k){
+          var f = FICHAS[k]; var nome = k;
+          categorias.forEach(function(cat){ (cat.itens||[]).forEach(function(it){ if(it.id===k) nome=it.nome; }); });
+          return '<div style="padding:10px 0;border-bottom:1px solid #f3f4f6"><div style="font-weight:600;font-size:.84rem">' + nome + '</div>'
+            + '<div style="font-size:.72rem;color:#9ca3af">' + f.length + ' ingrediente(s)</div></div>';
+        }).join("")
+      : '<p style="color:#9ca3af;font-size:.84rem">Nenhuma ficha técnica.</p>';
+    c.innerHTML = '<button class="btn-pri" onclick="wlNovaFicha()" style="margin-bottom:12px;font-size:.76rem;padding:7px 14px">+ Nova Ficha Técnica</button>' + fichasHtml;
+  } else {
+    c.innerHTML = movimentos.length
+      ? movimentos.slice(0,30).map(function(m){
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6">'
+            + '<div><div style="font-size:.8rem;font-weight:600">' + (m.insNome||m.insId) + '</div>'
+            + '<div style="font-size:.7rem;color:#9ca3af">' + (m.data||"").slice(0,16).replace("T"," ") + ' · ' + (m.motivo||m.tipo) + '</div></div>'
+            + '<div style="font-weight:700;font-size:.84rem;color:' + (m.delta>0?"#16a34a":"#dc2626") + '">'
+            + (m.delta>0?"+":"") + (m.delta||0).toFixed(2) + '</div></div>';
+        }).join("")
+      : '<p style="color:#9ca3af;font-size:.84rem">Sem movimentos registrados.</p>';
+  }
+}
+
+function wlNovaFicha(){ toast("Cadastre produtos primeiro para criar fichas técnicas."); }
+
+/* ── QR CODES ── */
+function _baseURL(){ return window.location.origin + window.location.pathname; }
+
+function wlGerarQRCodes(){
+  var lista  = document.getElementById("qr-lista");
+  var n      = config.numUnidades || 10;
+  var tipo   = config.tipoUnidade || "Mesa";
+  var base   = _baseURL();
+  var html   = "";
+  for(var i = 1; i <= n; i++){
+    var url    = base + "?unidade=" + i;
+    var qrUrl  = "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=" + encodeURIComponent(url);
+    html += '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;text-align:center">'
+          + '<img src="' + qrUrl + '" style="width:100px;height:100px;display:block;margin:0 auto 6px" loading="lazy"/>'
+          + '<div style="font-weight:700;font-size:.75rem;color:var(--cor-pri)">' + tipo + ' ' + String(i).padStart(2,"0") + '</div>'
+          + '<a href="' + url + '" target="_blank" style="font-size:.65rem;color:#6b7280;word-break:break-all">' + url + '</a>'
+          + '</div>';
+  }
+  lista.innerHTML = html || "<p style='color:#9ca3af'>Configure o número de unidades primeiro.</p>";
+  toast("✅ " + n + " QR Code(s) gerados");
+}
+
+/* ── CARREGAR ADMIN ── */
+function wlCarregarAdmin(){
+  var f = function(id){ return document.getElementById(id); };
+  if(f("adm-nome"))         f("adm-nome").value         = config.nome     || "";
+  if(f("adm-local"))        f("adm-local").value        = config.local    || "";
+  if(f("adm-horario"))      f("adm-horario").value      = config.horario  || "";
+  if(f("adm-whatsapp"))     f("adm-whatsapp").value     = config.whatsapp || "";
+  if(f("adm-num-unidades")) f("adm-num-unidades").value = config.numUnidades || 10;
+  if(f("lbl-unidade-atual"))f("lbl-unidade-atual").textContent = config.tipoUnidade || "Mesa";
+}
+
+/* ── RESET COMPLETO ── */
+function wlResetarTudo(){
+  if(!confirm("⚠️ ATENÇÃO\n\nEsta ação irá apagar TODOS os dados:\n• Produtos e cardápio\n• Pedidos e histórico\n• Estoque e insumos\n• Fichas técnicas\n• Caixa\n\nA configuração do estabelecimento será mantida.\n\nDeseja continuar?")) return;
+  var keysReset = ["categorias_v1","pedidos_v1","historico_v1","insumos_v1","movimentos_v1","mesaStatus_v1","fichas_v1","fichas_tecnicas_v1"];
+  keysReset.forEach(function(k){ localStorage.removeItem(WL_PREFIX + k); });
+  categorias = []; pedidos = []; historico = []; insumos = []; movimentos = []; mesaStatus = {}; FICHAS = {};
+  toast("✅ Sistema zerado. Pronto para novo cliente.");
+  setTimeout(function(){ showView("admin", document.querySelector('[data-view="admin"]')); }, 600);
+}
+
+/* ── SirAccess stub (roles) ── */
+var SirAccess = (function(){
+  var _role = "admin";
+  return {
+    setRole: function(r){ _role = r; var b = document.getElementById("lbl-role-badge"); if(b) b.textContent = "👤 " + r; },
+    logout: function(){
+      if(confirm("Sair do sistema?")){ _role = "visitante"; SirAccess.setRole("visitante"); }
+    },
+    getRole: function(){ return _role; }
+  };
+})();
+
+/* ── INIT ── */
+window.addEventListener("DOMContentLoaded", function(){
+  wlAplicarIdentidade();
+  wlRenderCardapio();
+  SirAccess.setRole("admin");
+});
+</script>
+
+<!-- NAV ARROWS JS -->
+<script>
+(function(){
+  var nav = document.getElementById('nav-main');
+  var arL = document.getElementById('nav-arrow-left');
+  var arR = document.getElementById('nav-arrow-right');
+  if(!nav||!arL||!arR) return;
+  function _upd(){
+    var sl=nav.scrollLeft, max=nav.scrollWidth-nav.clientWidth;
+    arL.classList.toggle('nav-arr-vis', sl>8);
+    arR.classList.toggle('nav-arr-vis', max>8 && sl<max-8);
+  }
+  nav.addEventListener('scroll',_upd,{passive:true});
+  window.addEventListener('resize',_upd);
+  new MutationObserver(function(){ setTimeout(_upd,50); }).observe(nav,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+  window.addEventListener('sir:role_ready',function(){ setTimeout(_upd,100); });
+  setTimeout(_upd,300); setTimeout(_upd,800);
+  window.addEventListener('load',function(){ setTimeout(_upd,200); });
+  var _tx=0;
+  nav.addEventListener('touchstart',function(e){ _tx=e.touches[0].clientX; },{passive:true});
+  nav.addEventListener('touchend',function(e){
+    var dx=_tx-e.changedTouches[0].clientX;
+    if(Math.abs(dx)>20) nav.scrollBy({left:dx*1.5,behavior:'smooth'});
+  },{passive:true});
+  window._navArrowUpdate=_upd;
+})();
+</script>
+
+<!-- SW ARROWS GENÉRICAS -->
+<script>
+(function(){
+  function _wrapScroll(el,opts){
+    if(!el||el.dataset.swDone) return;
+    opts=opts||{};
+    var wrap=document.createElement('div');
+    wrap.className='sw-wrap'+(opts.mod?' '+opts.mod:'');
+    el.parentNode.insertBefore(wrap,el); wrap.appendChild(el);
+    el.classList.add('sw-inner');
+    var btnL=document.createElement('button'); btnL.className='sw-btn sw-l'; btnL.innerHTML='‹'; btnL.setAttribute('aria-label','Rolar esquerda');
+    var btnR=document.createElement('button'); btnR.className='sw-btn sw-r'; btnR.innerHTML='›'; btnR.setAttribute('aria-label','Rolar direita');
+    wrap.appendChild(btnL); wrap.appendChild(btnR);
+    function upd(){ var sl=el.scrollLeft,max=el.scrollWidth-el.clientWidth; btnL.classList.toggle('sw-vis',sl>6); btnR.classList.toggle('sw-vis',max>6&&sl<max-6); }
+    el.addEventListener('scroll',upd,{passive:true}); window.addEventListener('resize',upd);
+    btnL.addEventListener('click',function(e){ e.stopPropagation(); el.scrollBy({left:-160,behavior:'smooth'}); });
+    btnR.addEventListener('click',function(e){ e.stopPropagation(); el.scrollBy({left:160,behavior:'smooth'}); });
+    var _tx=0;
+    el.addEventListener('touchstart',function(e){ _tx=e.touches[0].clientX; },{passive:true});
+    el.addEventListener('touchend',function(e){ var dx=_tx-e.changedTouches[0].clientX; if(Math.abs(dx)>20) el.scrollBy({left:dx*1.5,behavior:'smooth'}); },{passive:true});
+    new MutationObserver(function(){ setTimeout(upd,40); }).observe(el,{childList:true,subtree:false,attributes:true,attributeFilter:['style']});
+    el.dataset.swDone='1'; setTimeout(upd,100); return upd;
+  }
+  function _aplicarTodos(){
+    var cn=document.getElementById('cat-nav'); if(cn) _wrapScroll(cn);
+    document.querySelectorAll('#view-estoque2 .overflow-x-auto').forEach(function(el){ _wrapScroll(el,{mod:'sw-pill'}); });
+    document.querySelectorAll('.admin-card').forEach(function(card){
+      if(card.querySelector('table')&&card.style.overflowX==='auto'){
+        var tbl=card.querySelector('table');
+        if(tbl&&!tbl.parentElement.dataset.swDone){
+          var inner=document.createElement('div'); inner.style.overflowX='auto';
+          tbl.parentNode.insertBefore(inner,tbl); inner.appendChild(tbl);
+          card.style.overflowX=''; _wrapScroll(inner,{mod:'sw-table'});
+        }
+      }
+    });
+  }
+  window.addEventListener('load',function(){ setTimeout(_aplicarTodos,500); setTimeout(_aplicarTodos,1200); });
+  var _origSV=window.showView;
+  window.showView=function(name,btn){ if(typeof _origSV==='function') _origSV(name,btn); setTimeout(_aplicarTodos,300); };
+  window._wrapScroll=_wrapScroll; window._swAplicarTodos=_aplicarTodos;
+})();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(function(r){ console.log('[PWA] SW registrado:', r.scope); })
+      .catch(function(e){ console.warn('[PWA] SW falhou:', e.message); });
+  });
+}
+</script>
 </body>
 </html>
