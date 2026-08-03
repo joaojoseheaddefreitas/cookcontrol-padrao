@@ -681,52 +681,66 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
     <div class="flex items-center gap-3 mb-4">
       <div style="background:linear-gradient(135deg,#0891b2,#0e7490);border-radius:12px;padding:8px 12px;font-size:1.2rem">⚙️</div>
       <div>
-        <h2 class="serif text-lg" style="color:#0f2340">Modo de Operação</h2>
-        <p class="text-xs text-gray-400">Escolha como o sistema vai trabalhar</p>
+     <!-- ═══════════════════════════════════════════════════════════
+     MÓDULO DE OPERAÇÃO: TRÊS MODOS COMERCIAIS DEFINITIVOS
+     ═══════════════════════════════════════════════════════════ -->
+<div class="p-6 bg-white rounded-2xl border border-gray-100 mb-6">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">⚙️</div>
+    <div>
+      <h2 class="serif text-lg font-bold text-gray-800">Modo de Operação</h2>
+      <p class="text-xs text-gray-400">Configure as regras globais de pagamento e destino da produção</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Card 1: Pós-Pago Tradicional (Padrão) -->
+    <div class="p-4 rounded-xl border border-gray-200 bg-gray-50/50 hover:border-orange-500 transition-all cursor-pointer">
+      <div class="flex justify-between items-start mb-2">
+        <span class="text-xl">🍽️</span>
+        <input type="radio" name="modo_fluxo" value="pospago" class="text-orange-600 focus:ring-0" checked>
       </div>
+      <h4 class="font-bold text-sm text-gray-800 mb-1">Fluxo Pós-Pago Tradicional</h4>
+      <p class="text-xs text-gray-400 leading-relaxed">Padrão de mercado (restaurantes e padarias). O pedido vai direto para o Painel Digital sem travas e acumula na comanda para pagamento no final da refeição ou na entrega.</p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-      <!-- Barraca Simples -->
-      <label id="modo-barraca-card" class="cursor-pointer">
-        <input type="radio" name="modo-op" value="barraca" class="hidden" onchange="salvarModoOp('barraca')"/>
-        <div class="rounded-2xl border-2 p-4 transition-all" id="modo-barraca-box" style="border-color:#ea580c;background:#fff7ed">
-          <div class="text-2xl mb-2">🏖️</div>
-          <p class="font-bold text-sm text-orange-700">Meu Estabelecimento</p>
-          <p class="text-xs text-orange-500 mt-1">Comanda + Caixa + Maquininha. Sem KDS. Simples e rápido.</p>
-        </div>
-      </label>
-
-      <!-- Restaurante c/ KDS -->
-      <label id="modo-restaurante-card" class="cursor-pointer">
-        <input type="radio" name="modo-op" value="restaurante" class="hidden" onchange="salvarModoOp('restaurante')"/>
-        <div class="rounded-2xl border-2 p-4 transition-all" id="modo-restaurante-box" style="border-color:#e5e7eb;background:#f9fafb">
-          <div class="text-2xl mb-2">🍽️</div>
-          <p class="font-bold text-sm text-gray-700">Restaurante</p>
-          <p class="text-xs text-gray-500 mt-1">KDS completo + Cozinha digital + Estoque de insumos.</p>
-        </div>
-      </label>
-
-      <!-- Híbrido -->
-      <label id="modo-hibrido-card" class="cursor-pointer">
-        <input type="radio" name="modo-op" value="hibrido" class="hidden" onchange="salvarModoOp('hibrido')"/>
-        <div class="rounded-2xl border-2 p-4 transition-all" id="modo-hibrido-box" style="border-color:#e5e7eb;background:#f9fafb">
-          <div class="text-2xl mb-2">🔀</div>
-          <p class="font-bold text-sm text-gray-700">Híbrido</p>
-          <p class="text-xs text-gray-500 mt-1">Tudo ativo: comanda + KDS + estoque + maquininha.</p>
-        </div>
-      </label>
+    <!-- Card 2: Pré-Pago Geral (Shopping / Autoatendimento) -->
+    <div class="p-4 rounded-xl border border-gray-200 bg-gray-50/50 hover:border-orange-500 transition-all cursor-pointer">
+      <div class="flex justify-between items-start mb-2">
+        <span class="text-xl">🏬</span>
+        <input type="radio" name="modo_fluxo" value="prepago" class="text-orange-600 focus:ring-0">
+      </div>
+      <h4 class="font-bold text-sm text-gray-800 mb-1">Fluxo Pré-Pago Geral</h4>
+      <p class="text-xs text-gray-400 leading-relaxed">Ideal para praças de alimentação ou totens. O pedido via QR Code gera o pagamento imediato e fica retido no Caixa. Só vai para a produção após a confirmação manual.</p>
     </div>
 
-    <!-- Comanda impressa / simples -->
-    <div class="p-3 rounded-xl border-2 mb-3" style="border-color:#d1fae5;background:#f0fdf4">
-      <p class="text-xs font-bold text-green-700 uppercase tracking-wider mb-2">🖨️ Comanda Impressa</p>
-      <div class="flex gap-3 flex-wrap items-center">
-        <label class="flex items-center gap-2 text-sm text-green-800 cursor-pointer">
-          <input type="checkbox" id="adm-imprimir-comanda" class="rounded" onchange="salvarModoOp()"/>
-          Imprimir comanda ao enviar pedido
-        </label>
+    <!-- Card 3: Fluxo Híbrido / Permissão Dupla -->
+    <div class="p-4 rounded-xl border border-blue-200 bg-blue-50/30 hover:border-blue-500 transition-all cursor-pointer">
+      <div class="flex justify-between items-start mb-2">
+        <span class="text-xl">🔀</span>
+        <input type="radio" name="modo_fluxo" value="hibrido" class="text-blue-600 focus:ring-0">
       </div>
+      <h4 class="font-bold text-sm text-blue-800 mb-1">Fluxo Híbrido / Permissão Dupla</h4>
+      <p class="text-xs text-gray-400 leading-relaxed">O dono decide. Ativa o pré-pago por exceção nas mesas configuradas na praia OU permite que o cliente escolha no carrinho pagar na hora via Pix ou pagar depois no balcão.</p>
+    </div>
+  </div>
+
+  <div class="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
+    <div class="flex flex-col sm:flex-row gap-4 mb-2">
+      <label class="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
+        <input type="checkbox" id="adm-comanda-cozinha" class="rounded border-gray-300 text-emerald-600 focus:ring-0">
+        <span>Imprimir comanda de produção ao liberar pedido</span>
+      </label>
+      <label class="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
+        <input type="checkbox" id="adm-exibir-painel" class="rounded border-gray-300 text-emerald-600 focus:ring-0" checked>
+        <span>Exibir pedido no Painel Digital / Tela de Produção</span>
+      </label>
+    </div>
+    <p class="text-[11px] text-emerald-600">📟 Pedidos vão automaticamente para o Painel Digital da Cozinha. Use <strong>Ctrl+P</strong> para configurar a sua térmica.</p>
+  </div>
+  <button type="button" onclick="salvarConfiguracoesModo()" class="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm">💾 Salvar Configurações de Operação</button>
+</div>
+
       <p class="text-xs text-green-600 mt-2">📟 Pedidos vão automaticamente para o Painel Digital da Cozinha. Use <strong>Ctrl+P</strong> ou o botão "🖨️ Imprimir" na comanda para imprimir em qualquer impressora ou térmica.</p>
     </div>
     <button class="btn-primary w-full" onclick="salvarModoOp()">💾 Salvar Configurações</button>
@@ -1513,8 +1527,32 @@ function ccMesaEhPraia(mesa) {
   const n = parseInt(mesa, 10);
   return !isNaN(n) && n >= 50 && n <= 100;
 }
+function salvarConfiguracoesModo() {
+  const r = document.querySelector('input[name="modo_fluxo"]:checked');
+  if(!r) return;
+  config.modo_fluxo_ativo = r.value;
+  config.modo_praia_ativo = (r.value === "prepago" || r.value === "hibrido");
+  salvar("config", config);
+  toast("✅ Modos de operação e regras salvos com sucesso!");
+  render();
+}
+
 function ccRequerPrePago(mesa) {
-  return !!(config.modo_praia_ativo && ccMesaEhPraia(mesa));
+  const modo = config.modo_fluxo_ativo || "pospago";
+  
+  // 1. Se for Pré-Pago Geral, trava absolutamente tudo de qualquer lugar
+  if (modo === "prepago") return true;
+  
+  // 2. Se for Pós-Pago Tradicional, o pedido vai direto sem travas
+  if (modo === "pospago") return false;
+  
+  // 3. Se for Híbrido, verifica a exceção da mesa (linha 1512) ou se o cliente marcou para pagar na hora
+  if (modo === "hibrido") {
+    const ehMesaExcecao = typeof ccMesaEhPraia === "function" ? ccMesaEhPraia(mesa) : false;
+    const escolheuPagarAgora = document.getElementById("cli-pagar-agora")?.checked || false;
+    return !!(ehMesaExcecao || escolheuPagarAgora);
+  }
+  return false;
 }
 
 // Chamado pelo botão "💸 Confirmar Recebimento PIX" no Caixa.
@@ -2864,6 +2902,52 @@ render();
     </div>
     <button onclick="renderAtendente()" class="btn-ghost text-xs px-3 py-2">🔄 Atualizar</button>
   </div>
+  <!-- ═══════════════════════════════════════════════════════════
+       INTERFACE VISUAL: MÓDULO BALANÇA COMIDA POR QUILO (NOTA 10)
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="atend-quilo-box" class="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm mb-6 max-w-xl">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-xl">⚖️</span>
+      <div>
+        <h4 class="font-bold text-gray-800 text-sm">Lançamento de Balança (Quilo/Buffet)</h4>
+        <p class="text-[11px] text-gray-400">Pese o prato, informe o peso em KG e selecione a mesa para injetar o valor na comanda.</p>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Peso do Prato (KG)</label>
+        <input type="number" id="kg-peso-input" step="0.001" min="0.001" placeholder="Ex: 0.450" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-semibold bg-gray-50 focus:outline-none focus:border-orange-500">
+      </div>
+      <div>
+        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Selecione a Mesa</label>
+        <select id="kg-mesa-select" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-semibold bg-gray-50 focus:outline-none focus:border-orange-500">
+          <option value="">— Selecione —</option>
+          <!-- Injetado dinamicamente com base no config.numMesas que o dono escolhe -->
+        </select>
+      </div>
+    </div>
+    
+    <button type="button" onclick="lancarPratoQuilo()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm uppercase tracking-wider">
+      🚀 Lançar Peso na Comanda
+    </button>
+  </div>
+
+  <script>
+    // Alimenta o select de mesas da balança em tempo real de acordo com o config do dono
+    (function popularMesasBalanca() {
+      const select = document.getElementById("kg-mesa-select");
+      if (!select) return;
+      const total = typeof config !== "undefined" && config.numMesas ? config.numMesas : 50;
+      for (let i = 1; i <= total; i++) {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = `Mesa ${String(i).padStart(2, "0")}`;
+        select.appendChild(opt);
+      }
+    })();
+  </script>
+
 
   <!-- KPIs do dia -->
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -11305,5 +11389,47 @@ renderAdmin = function () {
 
 console.log("✅ Módulo Celular/Balcão/Tempo-Real carregado!");
 </script>
+// ─── MÓDULO COMIDA POR QUILO / BUFFET ──────────────────────────
+function lancarPratoQuilo() {
+  const pesoInput = document.getElementById("kg-peso-input");
+  const mesaSelect = document.getElementById("kg-mesa-select");
+  if(!pesoInput || !mesaSelect) return;
+
+  const peso = parseFloat(pesoInput.value);
+  const mesa = parseInt(mesaSelect.value, 10);
+  const precoKg = config.precoKg || 89.90;
+
+  if(!peso || peso <= 0 || !mesa) { toast("⚠️ Informe um peso válido e selecione a mesa!"); return; }
+
+  const valorCalculado = peso * precoKg;
+  const modoGeral = config.modo_fluxo_ativo || "pospago";
+
+  const registroQuilo = {
+    id: "Q_" + Date.now(),
+    data: new Date().toISOString(),
+    mesa: mesa,
+    pag: "local",
+    subtotal: valorCalculado,
+    total: valorCalculado,
+    status: modoGeral === "prepago" ? "aguardando_pagamento" : "pago",
+    obs: `Lançamento de Balança: ${peso.toFixed(3)} kg`,
+    itens: [{ id: "COMP_QUILO", nome: `Buffet Livre/Quilo (${peso.toFixed(3)}kg)`, preco: valorCalculado, q: 1 }]
+  };
+
+  historico.unshift(registroQuilo);
+  salvar("historico", historico);
+  
+  pesoInput.value = "";
+  toast(`⚖️ ${peso.toFixed(3)}kg lançados com sucesso na Mesa ${String(mesa).padStart(2,"0")}!`);
+  
+  if(modoGeral === "prepago" && typeof renderCaixa === "function") renderCaixa();
+  render();
+}
+
+// ─── AJUSTE TAXA DO MOTOBOI (DELIVERY) ────────────────────────
+function calcularTaxaMotoboiEntrega() {
+  return S.isDelivery ? (config.taxaEntrega || 7.00) : 0;
+}
+
 </body>
 </html>
