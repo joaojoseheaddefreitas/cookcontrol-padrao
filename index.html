@@ -532,7 +532,8 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
 
         <div>
           <div class="flex items-center gap-2 mb-1.5">
-            <span class="text-3xl drop-shadow-lg">🌞</span>
+            <span class="text-3xl drop-shadow-lg" id="cli-header-emoji">🌞</span>
+            <img id="cli-header-logo" src="" class="hidden w-9 h-9 rounded-full object-cover border-2 border-white shadow-lg">
             <div>
               <h1 class="serif text-white leading-tight" id="lbl-nome-estabelecimento"
                 style="font-size:1.6rem;text-shadow:0 2px 16px rgba(0,0,0,.95)">Meu Estabelecimento</h1>
@@ -604,6 +605,23 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
 
   <!-- ITEMS -->
   <main class="max-w-xl mx-auto px-4">
+    <!-- ═══════════════════════════════════════════════════════════
+         MODELOS DE SERVIÇO (QUILO/LIVRE/ESPETO/COMBINADO) + MINHA COMANDA
+         ═══════════════════════════════════════════════════════════ -->
+    <div id="cli-servico-card" class="hidden mb-5 space-y-3"></div>
+
+    <div id="cli-extrato-box" class="hidden rounded-2xl border border-emerald-100 bg-emerald-50 p-4 mb-5">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider">🧾 Minha Comanda</p>
+        <span class="text-[10px] text-emerald-500">atualiza sozinho</span>
+      </div>
+      <div id="cli-extrato-lista" class="space-y-1 mb-2"></div>
+      <div class="flex items-center justify-between pt-2 border-t border-emerald-200">
+        <span class="text-xs font-bold text-emerald-700">Total da Mesa</span>
+        <span id="cli-extrato-total" class="text-lg font-black text-emerald-700">R$ 0,00</span>
+      </div>
+    </div>
+
     <div id="items-wrap"></div>
     <div id="empty-state" class="hidden text-center py-16">
       <div class="text-5xl mb-3">🔍</div>
@@ -654,19 +672,19 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
         <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Nome</label>
-        <input id="adm-nome" class="input-base" value=""/>
+        <input id="adm-nome" class="input-base" value="" placeholder="Nome do estabelecimento"/>
       </div>
       <div>
         <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Localização</label>
-        <input id="adm-local" class="input-base" value=""/>
+        <input id="adm-local" class="input-base" value="" placeholder="Cidade — UF · Bairro"/>
       </div>
       <div>
         <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Horário</label>
-        <input id="adm-horario" class="input-base" value="Seg–Dom · 09h–20h"/>
+        <input id="adm-horario" class="input-base" value="" placeholder="Seg–Dom · 09h–20h"/>
       </div>
       <div>
         <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Nº de Mesas</label>
-        <input id="adm-mesas" class="input-base" type="number" value="50" min="1" max="200"/>
+        <input id="adm-mesas" class="input-base" type="number" value="" placeholder="50" min="1" max="200"/>
       </div>
     </div>
     <div class="mt-3 p-3 rounded-xl border-2 border-green-200 bg-green-50">
@@ -681,69 +699,165 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
     <div class="flex items-center gap-3 mb-4">
       <div style="background:linear-gradient(135deg,#0891b2,#0e7490);border-radius:12px;padding:8px 12px;font-size:1.2rem">⚙️</div>
       <div>
-     <!-- ═══════════════════════════════════════════════════════════
-     MÓDULO DE OPERAÇÃO: TRÊS MODOS COMERCIAIS DEFINITIVOS
-     ═══════════════════════════════════════════════════════════ -->
-<div class="p-6 bg-white rounded-2xl border border-gray-100 mb-6">
-  <div class="flex items-center gap-3 mb-4">
-    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">⚙️</div>
+        <h2 class="serif text-lg" style="color:#0f2340">Modo de Operação</h2>
+        <p class="text-xs text-gray-400">Configure as regras globais de pagamento e destino da produção</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+      <!-- Card 1: Pós-Pago Tradicional (Padrão) -->
+      <label class="block cursor-pointer">
+        <input type="radio" name="modo_fluxo" value="pospago" class="hidden peer" checked>
+        <div class="rounded-xl border border-gray-200 bg-gray-50/50 peer-checked:border-orange-500 peer-checked:bg-orange-50/50 hover:border-orange-300 transition-all p-4 h-full">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xl">🍽️</span>
+          </div>
+          <h4 class="font-bold text-sm text-gray-800 mb-1">Fluxo Pós-Pago Tradicional</h4>
+          <p class="text-xs text-gray-400 leading-relaxed">Padrão de mercado (restaurantes e padarias). O pedido vai direto para o Painel Digital sem travas e acumula na comanda para pagamento no final da refeição ou na entrega.</p>
+        </div>
+      </label>
+
+      <!-- Card 2: Pré-Pago Geral (Shopping / Autoatendimento) -->
+      <label class="block cursor-pointer">
+        <input type="radio" name="modo_fluxo" value="prepago" class="hidden peer">
+        <div class="rounded-xl border border-gray-200 bg-gray-50/50 peer-checked:border-orange-500 peer-checked:bg-orange-50/50 hover:border-orange-300 transition-all p-4 h-full">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xl">🏬</span>
+          </div>
+          <h4 class="font-bold text-sm text-gray-800 mb-1">Fluxo Pré-Pago Geral</h4>
+          <p class="text-xs text-gray-400 leading-relaxed">Ideal para praças de alimentação ou totens. O pedido via QR Code gera o pagamento imediato e fica retido no Caixa. Só vai para a produção após a confirmação manual.</p>
+        </div>
+      </label>
+
+      <!-- Card 3: Fluxo Híbrido / Permissão Dupla -->
+      <label class="block cursor-pointer">
+        <input type="radio" name="modo_fluxo" value="hibrido" class="hidden peer">
+        <div class="rounded-xl border border-blue-200 bg-blue-50/30 peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-blue-400 transition-all p-4 h-full">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xl">🔀</span>
+          </div>
+          <h4 class="font-bold text-sm text-blue-800 mb-1">Fluxo Híbrido / Permissão Dupla</h4>
+          <p class="text-xs text-gray-400 leading-relaxed">O dono decide. Ativa o pré-pago por exceção nas mesas configuradas na praia OU permite que o cliente escolha no carrinho pagar na hora via Pix ou pagar depois no balcão.</p>
+        </div>
+      </label>
+    </div>
+
+    <div class="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
+      <div class="flex flex-col sm:flex-row gap-4 mb-2">
+        <label class="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
+          <input type="checkbox" id="adm-comanda-cozinha" class="rounded border-gray-300 text-emerald-600 focus:ring-0">
+          <span>Imprimir comanda de produção ao liberar pedido</span>
+        </label>
+        <label class="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
+          <input type="checkbox" id="adm-exibir-painel" class="rounded border-gray-300 text-emerald-600 focus:ring-0" checked>
+          <span>Exibir pedido no Painel Digital / Tela de Produção</span>
+        </label>
+      </div>
+      <p class="text-[11px] text-emerald-600">📟 Pedidos vão automaticamente para o Painel Digital da Cozinha. Use <strong>Ctrl+P</strong> para configurar a sua térmica.</p>
+    </div>
+    <button type="button" onclick="salvarConfiguracoesModo()" class="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm">💾 Salvar Configurações de Operação</button>
+  </div>
+
+  <!-- ══ CONFIGURAÇÃO DO MODELO DE SERVIÇO ══ -->
+  <div class="admin-card mb-4">
+    <div class="flex items-center gap-3 mb-4">
+      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:12px;padding:8px 12px;font-size:1.2rem">🍽️</div>
+      <div>
+        <h2 class="serif text-lg" style="color:#0f2340">Configuração do Modelo de Serviço</h2>
+        <p class="text-xs text-gray-400">Ative o que funciona na sua casa e defina os preços de cada modelo</p>
+      </div>
+    </div>
+
+    <div class="space-y-3 mb-4">
+      <!-- À la Carte -->
+      <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50/50 cursor-pointer">
+        <input type="checkbox" id="adm-chk-alacarte" class="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-0" checked>
+        <span class="text-sm font-bold text-gray-700 flex-1">📋 Cardápio Normal (À la Carte)</span>
+      </label>
+
+      <!-- Buffet Quilo -->
+      <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50/50 cursor-pointer flex-wrap">
+        <input type="checkbox" id="adm-chk-quilo" class="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-0">
+        <span class="text-sm font-bold text-gray-700 flex-1">⚖️ Buffet Quilo</span>
+        <div class="flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden">
+          <span class="px-2 text-xs font-bold text-gray-400">R$</span>
+          <input type="number" id="adm-p-quilo" step="0.01" min="0" value="" placeholder="89.90" class="w-24 p-2 bg-transparent text-sm font-semibold focus:outline-none">
+          <span class="pr-2 text-xs text-gray-400">/kg</span>
+        </div>
+      </label>
+
+      <!-- Buffet Livre -->
+      <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50/50 cursor-pointer flex-wrap">
+        <input type="checkbox" id="adm-chk-livre" class="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-0">
+        <span class="text-sm font-bold text-gray-700 flex-1">🍛 Buffet Livre</span>
+        <div class="flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden">
+          <span class="px-2 text-xs font-bold text-gray-400">R$</span>
+          <input type="number" id="adm-p-livre" step="0.01" min="0" value="" placeholder="59.90" class="w-24 p-2 bg-transparent text-sm font-semibold focus:outline-none">
+          <span class="pr-2 text-xs text-gray-400">/pessoa</span>
+        </div>
+      </label>
+
+      <!-- Espeto Corrido -->
+      <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50/50 cursor-pointer flex-wrap">
+        <input type="checkbox" id="adm-chk-espeto" class="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-0">
+        <span class="text-sm font-bold text-gray-700 flex-1">🍢 Espeto Corrido</span>
+        <div class="flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden">
+          <span class="px-2 text-xs font-bold text-gray-400">R$</span>
+          <input type="number" id="adm-p-espeto" step="0.01" min="0" value="" placeholder="49.90" class="w-24 p-2 bg-transparent text-sm font-semibold focus:outline-none">
+          <span class="pr-2 text-xs text-gray-400">/pessoa</span>
+        </div>
+      </label>
+
+      <!-- Valor Único Combinado -->
+      <label class="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50/30 cursor-pointer flex-wrap">
+        <input type="checkbox" id="adm-chk-comb" class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-0">
+        <span class="text-sm font-bold text-blue-800 flex-1">🔥 Valor Único Combinado (Espeto + Buffet)</span>
+        <div class="flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden">
+          <span class="px-2 text-xs font-bold text-gray-400">R$</span>
+          <input type="number" id="adm-p-comb" step="0.01" min="0" value="" placeholder="79.90" class="w-24 p-2 bg-transparent text-sm font-semibold focus:outline-none">
+          <span class="pr-2 text-xs text-gray-400">/pessoa</span>
+        </div>
+      </label>
+    </div>
+
     <div>
-      <h2 class="serif text-lg font-bold text-gray-800">Modo de Operação</h2>
-      <p class="text-xs text-gray-400">Configure as regras globais de pagamento e destino da produção</p>
+      <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Taxa do Motoboi</label>
+      <div class="flex items-center rounded-xl border border-gray-200 bg-gray-50 overflow-hidden focus-within:border-orange-500 max-w-xs">
+        <span class="px-3 text-sm font-bold text-gray-400">R$</span>
+        <input type="number" id="adm-taxa-motoboi" step="0.01" min="0" value="" placeholder="7.00" class="w-full p-2.5 bg-transparent text-sm font-semibold focus:outline-none">
+      </div>
     </div>
+
+    <button type="button" onclick="salvarConfiguracoesModo()" class="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm">💾 Salvar Modelo de Serviço</button>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <!-- Card 1: Pós-Pago Tradicional (Padrão) -->
-    <div class="p-4 rounded-xl border border-gray-200 bg-gray-50/50 hover:border-orange-500 transition-all cursor-pointer">
-      <div class="flex justify-between items-start mb-2">
-        <span class="text-xl">🍽️</span>
-        <input type="radio" name="modo_fluxo" value="pospago" class="text-orange-600 focus:ring-0" checked>
+  <!-- ══ IDENTIDADE VISUAL (WHITE LABEL) ══ -->
+  <div class="admin-card mb-4">
+    <div class="flex items-center gap-3 mb-4">
+      <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:12px;padding:8px 12px;font-size:1.2rem">🎨</div>
+      <div>
+        <h2 class="serif text-lg" style="color:#0f2340">Identidade Visual da Marca</h2>
+        <p class="text-xs text-gray-400">Personalize a logo e o banner de capa exibidos no cardápio do cliente</p>
       </div>
-      <h4 class="font-bold text-sm text-gray-800 mb-1">Fluxo Pós-Pago Tradicional</h4>
-      <p class="text-xs text-gray-400 leading-relaxed">Padrão de mercado (restaurantes e padarias). O pedido vai direto para o Painel Digital sem travas e acumula na comanda para pagamento no final da refeição ou na entrega.</p>
     </div>
 
-    <!-- Card 2: Pré-Pago Geral (Shopping / Autoatendimento) -->
-    <div class="p-4 rounded-xl border border-gray-200 bg-gray-50/50 hover:border-orange-500 transition-all cursor-pointer">
-      <div class="flex justify-between items-start mb-2">
-        <span class="text-xl">🏬</span>
-        <input type="radio" name="modo_fluxo" value="prepago" class="text-orange-600 focus:ring-0">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Logomarca</label>
+        <div class="flex items-center gap-3">
+          <img id="adm-preview-logo" src="" class="hidden w-12 h-12 rounded-lg object-cover border border-gray-200">
+          <input type="file" id="adm-upload-logo" accept="image/*" onchange="ccProcessarUploadImagem(this,'adm-preview-logo')" class="text-xs w-full file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+        </div>
       </div>
-      <h4 class="font-bold text-sm text-gray-800 mb-1">Fluxo Pré-Pago Geral</h4>
-      <p class="text-xs text-gray-400 leading-relaxed">Ideal para praças de alimentação ou totens. O pedido via QR Code gera o pagamento imediato e fica retido no Caixa. Só vai para a produção após a confirmação manual.</p>
-    </div>
-
-    <!-- Card 3: Fluxo Híbrido / Permissão Dupla -->
-    <div class="p-4 rounded-xl border border-blue-200 bg-blue-50/30 hover:border-blue-500 transition-all cursor-pointer">
-      <div class="flex justify-between items-start mb-2">
-        <span class="text-xl">🔀</span>
-        <input type="radio" name="modo_fluxo" value="hibrido" class="text-blue-600 focus:ring-0">
+      <div>
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Banner de Capa</label>
+        <div class="flex items-center gap-3">
+          <img id="adm-preview-banner" src="" class="hidden w-20 h-12 rounded-lg object-cover border border-gray-200">
+          <input type="file" id="adm-upload-banner" accept="image/*" onchange="ccProcessarUploadImagem(this,'adm-preview-banner')" class="text-xs w-full file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+        </div>
       </div>
-      <h4 class="font-bold text-sm text-blue-800 mb-1">Fluxo Híbrido / Permissão Dupla</h4>
-      <p class="text-xs text-gray-400 leading-relaxed">O dono decide. Ativa o pré-pago por exceção nas mesas configuradas na praia OU permite que o cliente escolha no carrinho pagar na hora via Pix ou pagar depois no balcão.</p>
     </div>
-  </div>
-
-  <div class="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
-    <div class="flex flex-col sm:flex-row gap-4 mb-2">
-      <label class="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
-        <input type="checkbox" id="adm-comanda-cozinha" class="rounded border-gray-300 text-emerald-600 focus:ring-0">
-        <span>Imprimir comanda de produção ao liberar pedido</span>
-      </label>
-      <label class="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
-        <input type="checkbox" id="adm-exibir-painel" class="rounded border-gray-300 text-emerald-600 focus:ring-0" checked>
-        <span>Exibir pedido no Painel Digital / Tela de Produção</span>
-      </label>
-    </div>
-    <p class="text-[11px] text-emerald-600">📟 Pedidos vão automaticamente para o Painel Digital da Cozinha. Use <strong>Ctrl+P</strong> para configurar a sua térmica.</p>
-  </div>
-  <button type="button" onclick="salvarConfiguracoesModo()" class="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm">💾 Salvar Configurações de Operação</button>
-</div>
-
-      <p class="text-xs text-green-600 mt-2">📟 Pedidos vão automaticamente para o Painel Digital da Cozinha. Use <strong>Ctrl+P</strong> ou o botão "🖨️ Imprimir" na comanda para imprimir em qualquer impressora ou térmica.</p>
-    </div>
-    <button class="btn-primary w-full" onclick="salvarModoOp()">💾 Salvar Configurações</button>
+    <p class="text-[11px] text-gray-400 mt-2">As imagens são salvas ao clicar em "💾 Salvar Configurações de Operação" ou "💾 Salvar Modelo de Serviço".</p>
   </div>
 
   <!-- ══ MAQUININHA & PIX ══ -->
@@ -1217,6 +1331,10 @@ function render() {
   document.getElementById("lbl-nome-estabelecimento").textContent = config.nome;
   document.getElementById("lbl-localizacao").textContent = config.local;
   document.getElementById("lbl-horario").textContent = config.horario;
+  if (typeof renderCardsServicoCliente === "function") renderCardsServicoCliente();
+  if (typeof aplicarIdentidadeVisualCliente === "function") aplicarIdentidadeVisualCliente();
+  if (typeof renderExtratoQuiloCliente === "function") renderExtratoQuiloCliente();
+  if (typeof ccPopularServicoSelect === "function") ccPopularServicoSelect();
 }
 
 function renderNav() {
@@ -1527,33 +1645,8 @@ function ccMesaEhPraia(mesa) {
   const n = parseInt(mesa, 10);
   return !isNaN(n) && n >= 50 && n <= 100;
 }
-function salvarConfiguracoesModo() {
-  const r = document.querySelector('input[name="modo_fluxo"]:checked');
-  if(!r) return;
-  config.modo_fluxo_ativo = r.value;
-  config.modo_praia_ativo = (r.value === "prepago" || r.value === "hibrido");
-  salvar("config", config);
-  toast("✅ Modos de operação e regras salvos com sucesso!");
-  render();
-}
-
-function ccRequerPrePago(mesa) {
-  const modo = config.modo_fluxo_ativo || "pospago";
-  
-  // 1. Se for Pré-Pago Geral, trava absolutamente tudo de qualquer lugar
-  if (modo === "prepago") return true;
-  
-  // 2. Se for Pós-Pago Tradicional, o pedido vai direto sem travas
-  if (modo === "pospago") return false;
-  
-  // 3. Se for Híbrido, verifica a exceção da mesa (linha 1512) ou se o cliente marcou para pagar na hora
-  if (modo === "hibrido") {
-    const ehMesaExcecao = typeof ccMesaEhPraia === "function" ? ccMesaEhPraia(mesa) : false;
-    const escolheuPagarAgora = document.getElementById("cli-pagar-agora")?.checked || false;
-    return !!(ehMesaExcecao || escolheuPagarAgora);
-  }
-  return false;
-}
+// NOTA: salvarConfiguracoesModo() e ccRequerPrePago() foram movidas para o
+// final do arquivo (bloco de funções protegidas, antes do fechamento da tag de script).
 
 // Chamado pelo botão "💸 Confirmar Recebimento PIX" no Caixa.
 // Libera manualmente um pedido retido no Pré-pago para a cozinha.
@@ -1737,6 +1830,24 @@ function renderAdmin() {
   document.getElementById("adm-local").value = config.local;
   document.getElementById("adm-horario").value = config.horario;
   document.getElementById("adm-mesas").value = config.numMesas;
+  if (document.getElementById("adm-taxa-motoboi")) document.getElementById("adm-taxa-motoboi").value = config.taxaEntrega || 7.00;
+  if (document.getElementById("adm-p-quilo")) document.getElementById("adm-p-quilo").value = config.precoKg || 89.90;
+  if (document.getElementById("adm-p-livre")) document.getElementById("adm-p-livre").value = config.precoLivre || 59.90;
+  if (document.getElementById("adm-p-espeto")) document.getElementById("adm-p-espeto").value = config.precoEspeto || 49.90;
+  if (document.getElementById("adm-p-comb")) document.getElementById("adm-p-comb").value = config.precoComb || 79.90;
+  if (document.getElementById("adm-chk-alacarte")) document.getElementById("adm-chk-alacarte").checked = config.svcAlacarte !== false;
+  if (document.getElementById("adm-chk-quilo")) document.getElementById("adm-chk-quilo").checked = !!config.svcQuilo;
+  if (document.getElementById("adm-chk-livre")) document.getElementById("adm-chk-livre").checked = !!config.svcLivre;
+  if (document.getElementById("adm-chk-espeto")) document.getElementById("adm-chk-espeto").checked = !!config.svcEspeto;
+  if (document.getElementById("adm-chk-comb")) document.getElementById("adm-chk-comb").checked = !!config.svcComb;
+  if (config.designLogo && document.getElementById("adm-preview-logo")) {
+    const pl = document.getElementById("adm-preview-logo");
+    pl.src = config.designLogo; pl.classList.remove("hidden");
+  }
+  if (config.designBanner && document.getElementById("adm-preview-banner")) {
+    const pb = document.getElementById("adm-preview-banner");
+    pb.src = config.designBanner; pb.classList.remove("hidden");
+  }
 
   // Categoria pills no admin
   const admNav = document.querySelector("#view-admin .flex.gap-2.overflow-x-auto");
@@ -2909,15 +3020,22 @@ render();
     <div class="flex items-center gap-2 mb-3">
       <span class="text-xl">⚖️</span>
       <div>
-        <h4 class="font-bold text-gray-800 text-sm">Lançamento de Balança (Quilo/Buffet)</h4>
-        <p class="text-[11px] text-gray-400">Pese o prato, informe o peso em KG e selecione a mesa para injetar o valor na comanda.</p>
+        <h4 class="font-bold text-gray-800 text-sm">Lançamento de Consumo (Balança / Buffet / Churrasco)</h4>
+        <p class="text-[11px] text-gray-400" id="kg-instrucao-txt">Pese o prato, informe o peso em KG e selecione a mesa para injetar o valor na comanda.</p>
       </div>
     </div>
-    
+
+    <div id="kg-servico-wrap" class="hidden mb-3">
+      <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Tipo de Lançamento</label>
+      <select id="kg-servico-select" onchange="ccAtualizarLabelServico(); calcularPrecoNaTela();" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-semibold bg-gray-50 focus:outline-none focus:border-orange-500">
+        <!-- Injetado dinamicamente com base nos serviços ativos em config -->
+      </select>
+    </div>
+
     <div class="grid grid-cols-2 gap-3 mb-3">
       <div>
-        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Peso do Prato (KG)</label>
-        <input type="number" id="kg-peso-input" step="0.001" min="0.001" placeholder="Ex: 0.450" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-semibold bg-gray-50 focus:outline-none focus:border-orange-500">
+        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1" id="kg-peso-label">Peso do Prato (KG)</label>
+        <input type="number" id="kg-peso-input" step="0.001" min="0.001" placeholder="Ex: 0.450" oninput="calcularPrecoNaTela()" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-semibold bg-gray-50 focus:outline-none focus:border-orange-500">
       </div>
       <div>
         <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Selecione a Mesa</label>
@@ -2927,14 +3045,21 @@ render();
         </select>
       </div>
     </div>
-    
+
+    <!-- ═══ VISOR DIGITAL (ESPELHO DE BALANÇA COMERCIAL) ═══ -->
+    <div class="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 mb-3">
+      <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Valor a Cobrar</span>
+      <span id="kg-visor-reais" class="text-xl font-bold text-emerald-700 tabular-nums">R$ 0,00</span>
+    </div>
+
     <button type="button" onclick="lancarPratoQuilo()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm uppercase tracking-wider">
-      🚀 Lançar Peso na Comanda
+      🚀 Confirmar e Lançar Preço na Comanda
     </button>
   </div>
 
   <script>
-    // Alimenta o select de mesas da balança em tempo real de acordo com o config do dono
+    // Alimenta o select de mesas e o select de serviços ativos da balança
+    // em tempo real, de acordo com o config do dono.
     (function popularMesasBalanca() {
       const select = document.getElementById("kg-mesa-select");
       if (!select) return;
@@ -2945,6 +3070,7 @@ render();
         opt.textContent = `Mesa ${String(i).padStart(2, "0")}`;
         select.appendChild(opt);
       }
+      if (typeof ccPopularServicoSelect === "function") ccPopularServicoSelect();
     })();
   </script>
 
@@ -11388,23 +11514,238 @@ renderAdmin = function () {
 };
 
 console.log("✅ Módulo Celular/Balcão/Tempo-Real carregado!");
-</script>
-// ─── MÓDULO COMIDA POR QUILO / BUFFET ──────────────────────────
+
+// ═══════════════════════════════════════════════════════════
+// FUNÇÕES PROTEGIDAS: MODO DE OPERAÇÃO, BALANÇA/BUFFET E MOTOBOI
+// ═══════════════════════════════════════════════════════════
+function salvarConfiguracoesModo() {
+  const r = document.querySelector('input[name="modo_fluxo"]:checked');
+  if(!r) return;
+  config.modo_fluxo_ativo = r.value;
+  config.modo_praia_ativo = (r.value === "prepago" || r.value === "hibrido");
+  config.precoKg = parseFloat(document.getElementById("adm-p-quilo")?.value) || 89.90;
+  config.taxaEntrega = parseFloat(document.getElementById("adm-taxa-motoboi")?.value) || 7.00;
+  config.precoLivre = parseFloat(document.getElementById("adm-p-livre")?.value) || 59.90;
+  config.precoEspeto = parseFloat(document.getElementById("adm-p-espeto")?.value) || 49.90;
+  config.precoComb = parseFloat(document.getElementById("adm-p-comb")?.value) || 79.90;
+  config.svcAlacarte = document.getElementById("adm-chk-alacarte")?.checked !== false;
+  config.svcQuilo = !!document.getElementById("adm-chk-quilo")?.checked;
+  config.svcLivre = !!document.getElementById("adm-chk-livre")?.checked;
+  config.svcEspeto = !!document.getElementById("adm-chk-espeto")?.checked;
+  config.svcComb = !!document.getElementById("adm-chk-comb")?.checked;
+
+  const previewLogo = document.getElementById("adm-preview-logo");
+  const previewBanner = document.getElementById("adm-preview-banner");
+  if (previewLogo && !previewLogo.classList.contains("hidden") && previewLogo.src) config.designLogo = previewLogo.src;
+  if (previewBanner && !previewBanner.classList.contains("hidden") && previewBanner.src) config.designBanner = previewBanner.src;
+
+  salvar("config", config);
+  toast("✅ Modos de operação e regras salvos com sucesso!");
+  render();
+}
+
+// ─── IDENTIDADE VISUAL: UPLOAD DE LOGO/BANNER (BASE64) ─────────
+function ccProcessarUploadImagem(inputEl, previewImgId) {
+  const file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById(previewImgId);
+    if (preview) { preview.src = e.target.result; preview.classList.remove("hidden"); }
+  };
+  reader.readAsDataURL(file);
+}
+
+function ccRequerPrePago(mesa) {
+  const modo = config.modo_fluxo_ativo || "pospago";
+
+  // 1. Se for Pré-Pago Geral, trava absolutamente tudo de qualquer lugar
+  if (modo === "prepago") return true;
+
+  // 2. Se for Pós-Pago Tradicional, o pedido vai direto sem travas
+  if (modo === "pospago") return false;
+
+  // 3. Se for Híbrido, verifica a exceção da mesa ou se o cliente marcou para pagar na hora
+  if (modo === "hibrido") {
+    const ehMesaExcecao = typeof ccMesaEhPraia === "function" ? ccMesaEhPraia(mesa) : false;
+    const escolheuPagarAgora = document.getElementById("cli-pagar-agora")?.checked || false;
+    return !!(ehMesaExcecao || escolheuPagarAgora);
+  }
+  return false;
+}
+
+// ─── CATÁLOGO DE MODELOS DE SERVIÇO (QUILO / LIVRE / ESPETO / COMBINADO) ──
+const CC_SERVICOS = {
+  quilo:  { chk: "svcQuilo",  precoKey: "precoKg",     precoPadrao: 89.90, itemId: "COMP_QUILO",  unidade: "kg",     passo: 0.001, min: 0.001, label: "Buffet Quilo",        nomeItem: p => `Buffet Livre/Quilo (${p.toFixed(3)}kg)` },
+  livre:  { chk: "svcLivre",  precoKey: "precoLivre",  precoPadrao: 59.90, itemId: "COMP_LIVRE",  unidade: "pessoa(s)", passo: 1,     min: 1,     label: "Buffet Livre",        nomeItem: p => `Buffet Livre (${p} pessoa${p>1?"s":""})` },
+  espeto: { chk: "svcEspeto", precoKey: "precoEspeto", precoPadrao: 49.90, itemId: "COMP_ESPETO", unidade: "pessoa(s)", passo: 1,     min: 1,     label: "Espeto Corrido",      nomeItem: p => `Espeto Corrido (${p} pessoa${p>1?"s":""})` },
+  comb:   { chk: "svcComb",   precoKey: "precoComb",   precoPadrao: 79.90, itemId: "COMP_COMB",   unidade: "pessoa(s)", passo: 1,     min: 1,     label: "Churrasco Completo (Espeto Corrido + Buffet)", nomeItem: p => `Churrasco Completo — Valor Único (${p} pessoa${p>1?"s":""})` }
+};
+
+function ccServicosAtivos() {
+  return Object.keys(CC_SERVICOS).filter(k => !!config[CC_SERVICOS[k].chk]);
+}
+
+// ─── FRONTEND DO CLIENTE: CARDS DE SERVIÇO + EXTRATO AO VIVO ───
+function renderCardsServicoCliente() {
+  const box = document.getElementById("cli-servico-card");
+  if (!box) return;
+
+  const ativos = ccServicosAtivos();
+  if (config.svcAlacarte !== false && ativos.length === 0) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  if (!ativos.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+
+  box.classList.remove("hidden");
+  box.innerHTML = ativos.map(key => {
+    const s = CC_SERVICOS[key];
+    const preco = config[s.precoKey] || s.precoPadrao;
+    const precoFmt = preco.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    return `<div class="rounded-2xl overflow-hidden" style="background:linear-gradient(135deg,#0f2340,#1a3560)">
+      <div class="p-5">
+        <p class="text-[11px] font-bold uppercase tracking-wider" style="color:#93c5fd">🍽️ Opções do Nosso Buffet</p>
+        <div class="flex items-end justify-between mt-2 gap-3">
+          <div>
+            <p class="text-white font-bold text-sm">${s.label}</p>
+            <p class="text-[11px]" style="color:#bae6fd">Pague de forma clara e transparente — sem surpresas na conta.</p>
+          </div>
+          <p class="text-2xl font-black text-white whitespace-nowrap">${precoFmt}/${s.unidade}</p>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function aplicarIdentidadeVisualCliente() {
+  if (!config.designLogo) return;
+  const logoEl = document.getElementById("cli-header-logo");
+  const emojiEl = document.getElementById("cli-header-emoji");
+  if (logoEl) {
+    logoEl.src = config.designLogo;
+    logoEl.classList.remove("hidden");
+    if (emojiEl) emojiEl.classList.add("hidden");
+  }
+}
+
+function renderExtratoQuiloCliente() {
+  const box = document.getElementById("cli-extrato-box");
+  const lista = document.getElementById("cli-extrato-lista");
+  const totalEl = document.getElementById("cli-extrato-total");
+  if (!box || !lista || !totalEl || !S.mesa) return;
+
+  const idsServico = Object.values(CC_SERVICOS).map(s => s.itemId);
+  const registros = historico.filter(h =>
+    h.mesa === S.mesa && Array.isArray(h.itens) && h.itens.some(i => idsServico.includes(i.id))
+  );
+
+  if (!registros.length) { box.classList.add("hidden"); return; }
+
+  box.classList.remove("hidden");
+  let total = 0;
+  lista.innerHTML = registros.map(registro => {
+    total += registro.total || 0;
+    const item = registro.itens.find(i => idsServico.includes(i.id));
+    const valorFmt = (registro.total || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    return `<div class="flex items-center justify-between text-xs text-emerald-800">
+      <span>⚖️ ${item.nome}</span>
+      <span class="font-semibold">— ${valorFmt}</span>
+    </div>`;
+  }).join("");
+  totalEl.textContent = total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// Atualização automática do extrato do cliente entre dispositivos (garçom
+// lança na balança/buffet/churrasco → cliente vê no celular sem precisar atualizar a página).
+let _ccExtratoClientePoll = null;
+renderCardsServicoCliente();
+aplicarIdentidadeVisualCliente();
+if (S.mesa) {
+  renderExtratoQuiloCliente();
+  _ccExtratoClientePoll = setInterval(async () => {
+    if (window.SupaSync && typeof window.SupaSync.forcePull === "function") {
+      await window.SupaSync.forcePull();
+      historico = carregar("historico", historico);
+    }
+    renderExtratoQuiloCliente();
+  }, 15000);
+}
+
+// ─── ATENDENTE: SELETOR DE SERVIÇO + VISOR + LANÇAMENTO ────────
+function ccPopularServicoSelect() {
+  const select = document.getElementById("kg-servico-select");
+  const wrap = document.getElementById("kg-servico-wrap");
+  if (!select || !wrap) return;
+
+  const ativos = ccServicosAtivos();
+  select.innerHTML = "";
+  if (ativos.length <= 1) {
+    wrap.classList.add("hidden");
+    if (ativos.length === 1) {
+      const opt = document.createElement("option");
+      opt.value = ativos[0];
+      opt.textContent = CC_SERVICOS[ativos[0]].label;
+      select.appendChild(opt);
+    }
+  } else {
+    wrap.classList.remove("hidden");
+    ativos.forEach(key => {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = CC_SERVICOS[key].label;
+      select.appendChild(opt);
+    });
+  }
+  ccAtualizarLabelServico();
+}
+
+function ccServicoSelecionado() {
+  const select = document.getElementById("kg-servico-select");
+  const ativos = ccServicosAtivos();
+  if (select && select.value && CC_SERVICOS[select.value]) return select.value;
+  return ativos[0] || "quilo";
+}
+
+function ccAtualizarLabelServico() {
+  const s = CC_SERVICOS[ccServicoSelecionado()];
+  const labelEl = document.getElementById("kg-peso-label");
+  const pesoInput = document.getElementById("kg-peso-input");
+  const instrucaoEl = document.getElementById("kg-instrucao-txt");
+  if (!s) return;
+  if (labelEl) labelEl.textContent = s.unidade === "kg" ? "Peso do Prato (KG)" : `Quantidade (${s.unidade})`;
+  if (pesoInput) { pesoInput.step = s.passo; pesoInput.min = s.min; pesoInput.placeholder = s.unidade === "kg" ? "Ex: 0.450" : "Ex: 1"; }
+  if (instrucaoEl) instrucaoEl.textContent = s.unidade === "kg"
+    ? "Pese o prato, informe o peso em KG e selecione a mesa para injetar o valor na comanda."
+    : "Informe a quantidade de pessoas e selecione a mesa para injetar o valor na comanda.";
+}
+
+function calcularPrecoNaTela() {
+  const pesoInput = document.getElementById("kg-peso-input");
+  const visor = document.getElementById("kg-visor-reais");
+  if(!pesoInput || !visor) return;
+
+  const s = CC_SERVICOS[ccServicoSelecionado()];
+  const qtd = parseFloat(pesoInput.value) || 0;
+  const preco = (config[s.precoKey] || s.precoPadrao);
+  const valorCalculado = qtd * preco;
+
+  visor.textContent = valorCalculado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 function lancarPratoQuilo() {
   const pesoInput = document.getElementById("kg-peso-input");
   const mesaSelect = document.getElementById("kg-mesa-select");
   if(!pesoInput || !mesaSelect) return;
 
-  const peso = parseFloat(pesoInput.value);
+  const s = CC_SERVICOS[ccServicoSelecionado()];
+  const qtd = parseFloat(pesoInput.value);
   const mesa = parseInt(mesaSelect.value, 10);
-  const precoKg = config.precoKg || 89.90;
+  const preco = (config[s.precoKey] || s.precoPadrao);
 
-  if(!peso || peso <= 0 || !mesa) { toast("⚠️ Informe um peso válido e selecione a mesa!"); return; }
+  if(!qtd || qtd <= 0 || !mesa) { toast("⚠️ Informe um valor válido e selecione a mesa!"); return; }
 
-  const valorCalculado = peso * precoKg;
+  const valorCalculado = qtd * preco;
   const modoGeral = config.modo_fluxo_ativo || "pospago";
 
-  const registroQuilo = {
+  const registroServico = {
     id: "Q_" + Date.now(),
     data: new Date().toISOString(),
     mesa: mesa,
@@ -11412,16 +11753,17 @@ function lancarPratoQuilo() {
     subtotal: valorCalculado,
     total: valorCalculado,
     status: modoGeral === "prepago" ? "aguardando_pagamento" : "pago",
-    obs: `Lançamento de Balança: ${peso.toFixed(3)} kg`,
-    itens: [{ id: "COMP_QUILO", nome: `Buffet Livre/Quilo (${peso.toFixed(3)}kg)`, preco: valorCalculado, q: 1 }]
+    obs: `Lançamento — ${s.label}: ${qtd}`,
+    itens: [{ id: s.itemId, nome: s.nomeItem(qtd), preco: valorCalculado, q: 1 }]
   };
 
-  historico.unshift(registroQuilo);
+  historico.unshift(registroServico);
   salvar("historico", historico);
-  
+
   pesoInput.value = "";
-  toast(`⚖️ ${peso.toFixed(3)}kg lançados com sucesso na Mesa ${String(mesa).padStart(2,"0")}!`);
-  
+  calcularPrecoNaTela();
+  toast(`⚖️ ${s.label} lançado com sucesso na Mesa ${String(mesa).padStart(2,"0")}!`);
+
   if(modoGeral === "prepago" && typeof renderCaixa === "function") renderCaixa();
   render();
 }
@@ -11430,6 +11772,6 @@ function lancarPratoQuilo() {
 function calcularTaxaMotoboiEntrega() {
   return S.isDelivery ? (config.taxaEntrega || 7.00) : 0;
 }
-
+</script>
 </body>
 </html>
