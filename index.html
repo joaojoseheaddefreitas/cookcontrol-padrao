@@ -472,7 +472,7 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
 <body>
 
 <!-- TOP NAVIGATION -->
-<div class="sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
+<div id="cc-topbar-wrapper" class="sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
   <!-- Barra de perfil ativo -->
   <div id="role-bar" style="display:none;padding:4px 16px;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;justify-content:space-between;align-items:center">
     <span id="role-bar-label"></span>
@@ -492,7 +492,6 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
     <button class="nav-tab"        data-view="relatorio" onclick="showView('relatorio',this)">📊 Relatórios</button>
     <button class="nav-tab"        data-view="dashboard" onclick="showView('dashboard',this)">📈 Dashboard</button>
     <button class="nav-tab"        data-view="admin"     onclick="showView('admin',this)">⚙️ Admin</button>
-    <button class="nav-tab"        data-view="cliente"   onclick="showView('cliente',this)" style="display:none">📱 Cliente</button>
   </div>
   <button id="nav-arrow-right" onclick="document.getElementById('nav-main').scrollBy({left:120,behavior:'smooth'})" style="position:absolute;right:0;top:0;bottom:0;z-index:40;width:48px;background:linear-gradient(to left,rgba(255,255,255,1) 65%,transparent);border:none;cursor:pointer;align-items:center;justify-content:center;font-size:1.5rem;color:#ea580c;padding:0;font-weight:900">›</button>
   </div><!-- /nav-main-wrapper -->
@@ -642,11 +641,23 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
 <style>
   #cc-cli-header{position:fixed;top:0;left:0;right:0;z-index:60;background:#0f2340;color:#fff;padding:10px 16px;text-align:center;font-weight:800;font-size:.85rem;letter-spacing:.03em;box-shadow:0 2px 10px rgba(0,0,0,.15)}
   body.cc-modo-cliente{padding-top:38px}
-  #cc-cli-tabbar{position:fixed;bottom:0;left:0;right:0;z-index:60;background:#fff;border-top:1px solid #e5e7eb;display:flex;box-shadow:0 -4px 14px rgba(0,0,0,.08)}
+  /* CAUSA RAIZ do travamento de cliques nas 11 abas gerenciais: um seletor
+     de ID como "#cc-cli-tabbar{display:grid}" tem especificidade MAIOR que
+     a classe ".hidden{display:none}" do Tailwind — então mesmo com
+     class="hidden" no elemento, o grid continuava desenhado e fixo no
+     rodapé, interceptando cliques em qualquer tela (Admin incluso). A regra
+     abaixo, com id+classe juntos, tem especificidade maior ainda e garante
+     que ".hidden" sempre vence, não importa a ordem de carregamento do CSS. */
+  #cc-cli-tabbar{position:fixed;bottom:0;left:0;right:0;z-index:60;background:#fff;border-top:1px solid #e5e7eb;display:grid;grid-template-columns:repeat(3,1fr);box-shadow:0 -4px 14px rgba(0,0,0,.08)}
+  #cc-cli-tabbar.hidden{display:none!important}
+  #cc-cli-header.hidden{display:none!important}
+  #cc-cli-tabbar,#cc-cli-header{pointer-events:none}
+  #cc-cli-tabbar:not(.hidden),#cc-cli-header:not(.hidden){pointer-events:auto}
   #cc-cli-tabbar button{flex:1;padding:10px 4px 8px;background:none;border:none;font-size:.64rem;font-weight:700;color:#9ca3af;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
   #cc-cli-tabbar button.active{color:#ea580c}
   #cc-cli-tabbar button .ico{font-size:1.15rem}
-  .cc-cli-painel{display:none;max-width:36rem;margin:0 auto;padding:16px 16px 96px}
+  .cc-cli-painel{display:none;max-width:36rem;margin:0 auto;padding:16px 16px 128px}
+  .cc-vip-status{border-radius:12px;padding:10px 12px;font-size:.78rem;font-weight:700;margin-top:10px}
   .cc-cli-painel.active{display:block}
   .cc-timeline-card{border:1px solid #e5e7eb;border-radius:14px;padding:12px 14px;margin-bottom:10px;background:#fff}
   .cc-timeline-card.entregue{border-color:#bbf7d0;background:#f0fdf4}
@@ -668,27 +679,48 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
 
 <div id="cc-cli-header" class="hidden">📍 Mesa <span id="cc-cli-header-mesa">—</span></div>
 
-<!-- ABA: MEUS PEDIDOS -->
+<!-- ABA: ACOMPANHAMENTO DOS PEDIDOS -->
 <div id="cc-painel-pedidos" class="cc-cli-painel">
-  <h2 class="serif text-lg mb-3" style="color:#0f2340">⏳ Meus Pedidos</h2>
+  <h2 class="serif text-lg mb-3" style="color:#0f2340">⏳ Acompanhamento dos Pedidos</h2>
   <div id="cc-pedidos-lista"></div>
 </div>
 
-<!-- ABA: MINHA CONTA -->
+<!-- ABA: ACOMPANHAMENTO DA CONTA (somente extrato) -->
 <div id="cc-painel-conta" class="cc-cli-painel">
-  <h2 class="serif text-lg mb-3" style="color:#0f2340">🧾 Minha Conta</h2>
+  <h2 class="serif text-lg mb-3" style="color:#0f2340">🧾 Acompanhamento da Conta</h2>
   <div id="cc-conta-lista" class="mb-4"></div>
-  <div class="flex items-center justify-between p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 mb-4">
+  <div class="flex items-center justify-between p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50">
     <span class="font-bold text-emerald-700 text-sm">Total da Mesa</span>
     <span id="cc-conta-total" class="text-xl font-black text-emerald-700">R$ 0,00</span>
   </div>
-  <button class="btn-primary w-full" onclick="ccPedirContaCliente()">🧾 Pedir a Conta / Pagar</button>
   <p id="cc-conta-vazia" class="hidden text-center text-gray-400 text-sm mt-8">Nenhum pedido lançado ainda nesta mesa.</p>
+</div>
+
+<!-- ABA: FECHAMENTO / PAGAMENTO (Pix) -->
+<div id="cc-painel-fechamento" class="cc-cli-painel">
+  <h2 class="serif text-lg mb-3" style="color:#0f2340">🏁 Fechamento / Pagamento</h2>
+  <div id="cc-fechamento-lista" class="mb-4"></div>
+  <div class="flex items-center justify-between p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 mb-4">
+    <span class="font-bold text-emerald-700 text-sm">Total a Pagar</span>
+    <span id="cc-fechamento-total" class="text-xl font-black text-emerald-700">R$ 0,00</span>
+  </div>
+  <button class="btn-primary w-full" onclick="ccPedirContaCliente()">🏁 Fechar e Pagar via Pix</button>
+  <p id="cc-fechamento-vazia" class="hidden text-center text-gray-400 text-sm mt-8">Nenhum pedido lançado ainda nesta mesa.</p>
+</div>
+
+<!-- ABA: PAGAR COMO VIP (CONTA FIADO) -->
+<div id="cc-painel-vip" class="cc-cli-painel">
+  <h2 class="serif text-lg mb-3" style="color:#0f2340">💳 Pagar como VIP (Conta Fiado)</h2>
+  <p class="text-xs text-gray-400 mb-3">Disponível apenas para clientes cadastrados e autorizados pelo estabelecimento.</p>
+  <label style="font-size:.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;display:block;margin-bottom:4px">Telefone cadastrado</label>
+  <input id="cc-vip-tel" class="input-base" placeholder="(71) 9 0000-0000"/>
+  <button class="btn-primary w-full mt-3" onclick="ccPedirContaClienteFiado()">💳 Confirmar e Fechar no Fiado</button>
+  <div id="cc-vip-status"></div>
 </div>
 
 <!-- ABA: AVALIAR -->
 <div id="cc-painel-avaliar" class="cc-cli-painel">
-  <h2 class="serif text-lg mb-3" style="color:#0f2340">💬 Avalie sua experiência</h2>
+  <h2 class="serif text-lg mb-3" style="color:#0f2340">⭐ Avalie sua experiência</h2>
   <div class="flex justify-center gap-2 mb-4" id="cc-estrelas">
     <span class="cc-star" data-n="1" onclick="ccSelecionarNota(1)">★</span>
     <span class="cc-star" data-n="2" onclick="ccSelecionarNota(2)">★</span>
@@ -711,9 +743,11 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
 <!-- TABBAR -->
 <div id="cc-cli-tabbar" class="hidden">
   <button class="active" data-tab="cardapio" onclick="ccAbaCliente('cardapio')"><span class="ico">🍽️</span>Cardápio</button>
-  <button data-tab="pedidos" onclick="ccAbaCliente('pedidos')"><span class="ico">⏳</span>Meus Pedidos</button>
-  <button data-tab="conta" onclick="ccAbaCliente('conta')"><span class="ico">🧾</span>Minha Conta</button>
-  <button data-tab="avaliar" onclick="ccAbaCliente('avaliar')"><span class="ico">💬</span>Avaliar</button>
+  <button data-tab="pedidos" onclick="ccAbaCliente('pedidos')"><span class="ico">⏳</span>Pedidos</button>
+  <button data-tab="conta" onclick="ccAbaCliente('conta')"><span class="ico">🧾</span>Conta</button>
+  <button data-tab="fechamento" onclick="ccAbaCliente('fechamento')"><span class="ico">🏁</span>Fechar/Pagar</button>
+  <button data-tab="vip" onclick="ccAbaCliente('vip')"><span class="ico">💳</span>VIP/Fiado</button>
+  <button data-tab="avaliar" onclick="ccAbaCliente('avaliar')"><span class="ico">⭐</span>Avaliar</button>
 </div>
 
 <div id="view-mesas" class="hidden p-4 max-w-3xl mx-auto">
@@ -1041,6 +1075,27 @@ body.kds-mode #view-cozinha { max-width:100% !important; padding:0 !important; h
 <!-- ║         VIEW: RELATÓRIOS             ║ -->
 <!-- ╚══════════════════════════════════════╝ -->
 <div id="view-relatorio" class="hidden p-4 max-w-3xl mx-auto pb-10">
+
+  <!-- RELATÓRIO DE TURNOS E COMISSÕES DA EQUIPE -->
+  <div class="admin-card mb-4">
+    <h3 style="font-weight:800;font-size:.9rem;color:#0f2340;margin-bottom:4px">🧑‍💼 Relatório de Turnos e Comissões da Equipe</h3>
+    <p style="font-size:.72rem;color:#9ca3af;margin-bottom:12px">Quanto cada atendente vendeu hoje e a comissão de 10% sobre as vendas.</p>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+        <thead>
+          <tr style="border-bottom:2px solid #e5e7eb;text-align:left">
+            <th style="padding:6px 8px">Atendente</th>
+            <th style="padding:6px 8px;text-align:center">Pedidos</th>
+            <th style="padding:6px 8px;text-align:right">Total Vendido</th>
+            <th style="padding:6px 8px;text-align:right">Comissão 10%</th>
+            <th style="padding:6px 8px;text-align:right">Gorjetas</th>
+          </tr>
+        </thead>
+        <tbody id="rel-comissoes-tbody"></tbody>
+      </table>
+      <p id="rel-comissoes-vazio" class="hidden text-center text-gray-400 text-sm py-6">Nenhuma venda com atendente identificado hoje ainda.</p>
+    </div>
+  </div>
 
   <!-- STATS CARDS -->
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -3116,6 +3171,53 @@ render();
 <!-- ║          VIEW: PAINEL DO ATENDENTE               ║ -->
 <!-- ╚══════════════════════════════════════════════════╝ -->
 <div id="view-atendente" class="hidden max-w-5xl mx-auto px-4 py-4 pb-24">
+
+  <!-- ── Registro de Jornada / Troca de Turno ── -->
+  <div id="at-turno-box" class="admin-card mb-5">
+    <div style="text-align:center;margin-bottom:16px;padding-bottom:16px;border-bottom:1px dashed #e5e7eb">
+      <h3 style="font-weight:800;font-size:.9rem;color:#0f2340;margin-bottom:6px">📷 QR Code de Ativação</h3>
+      <p style="font-size:.72rem;color:#9ca3af;margin-bottom:10px">Escaneie uma vez, no seu celular, pra ativar o CookControl neste aparelho.</p>
+      <div id="cc-qr-ativacao" style="width:150px;height:150px;margin:0 auto 8px"></div>
+      <p style="font-size:.66rem;color:#6b7280;word-break:break-all" id="cc-link-ativacao"></p>
+    </div>
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-bold text-sm text-gray-600">🕐 Registro de Jornada</h3>
+      <span id="at-turno-ativo-badge" class="hidden badge" style="background:#dcfce7;color:#15803d">Turno ativo</span>
+    </div>
+    <div id="at-turno-form" style="display:grid;gap:10px;grid-template-columns:1fr 1fr">
+      <div style="grid-column:1/-1">
+        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Nome do Atendente *</label>
+        <input id="at-turno-nome" class="input-base" placeholder="Nome completo">
+      </div>
+      <div>
+        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Telefone *</label>
+        <input id="at-turno-tel" class="input-base" placeholder="(71) 9 0000-0000">
+      </div>
+      <div>
+        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Turno *</label>
+        <select id="at-turno-periodo" class="input-base">
+          <option value="">— Selecione —</option>
+          <option value="manha">🌅 Manhã</option>
+          <option value="tarde">🌤️ Tarde</option>
+          <option value="noite">🌙 Noite</option>
+        </select>
+      </div>
+      <div style="grid-column:1/-1">
+        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Horário de Entrada *</label>
+        <input id="at-turno-hora" type="time" class="input-base">
+      </div>
+      <button style="grid-column:1/-1" class="btn-primary w-full" onclick="ccSalvarTurno()">✅ Iniciar Turno</button>
+    </div>
+    <div id="at-turno-resumo" class="hidden">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="text-sm">
+          <p class="font-bold" style="color:#0f2340" id="at-turno-resumo-nome">—</p>
+          <p class="text-xs text-gray-400" id="at-turno-resumo-info">—</p>
+        </div>
+        <button onclick="ccEncerrarTurno()" class="btn-ghost text-xs px-3 py-2" style="color:#dc2626;border-color:#dc2626">🔚 Encerrar Turno</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Ações rápidas ── -->
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
@@ -5462,8 +5564,8 @@ const SirAccess = (function() {
     // Atendimento: mesas e pedidos do salão
     atendente: {
       label: '🧑‍💼 Atendente', cor: '#0f2340', bg: '#eff6ff',
-      views: ['mesas','atendente','cardapio','caixa'],
-      default: 'mesas',
+      views: ['mesas','atendente','cardapio'], // sem Admin/Estoque/Caixa, como pedido
+      default: 'atendente',
     },
     // Cozinha: pedidos + leitura de cardápio, estoque e fichas
     cozinheiro: {
@@ -5533,6 +5635,16 @@ const SirAccess = (function() {
     const mesaParam = params.get('mesa');
     if (mesaParam) {
       _mesaId = mesaParam;
+      // Correção: ?mesa= sozinho NÃO pode forçar "cliente" por cima de um
+      // atendente com turno ativo neste aparelho, nem de um role explícito
+      // pedido na própria URL — senão qualquer refresh/reabertura do app
+      // com a mesa ainda na barra de endereço derruba o atendente de volta
+      // pra tela do cliente (era a causa da barra de 6 botões vazando).
+      const roleParam = params.get('role');
+      if (roleParam && roleParam !== 'cliente' && ROLES[roleParam]) return roleParam;
+      try {
+        if (typeof carregar === 'function' && carregar('turnoAtivo', null)) return 'atendente';
+      } catch (e) {}
       return 'cliente';
     }
 
@@ -6039,6 +6151,10 @@ function abrirModalVip(id) {
           <label style="font-size:.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;display:block;margin-bottom:4px">Limite de Crédito Especial (R$)</label>
           <input id="vip-limite" class="input-base" type="number" step="0.01" min="0" value="${vip ? (vip.limite_credito||0) : 0}"/>
         </div>
+        <div>
+          <label style="font-size:.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;display:block;margin-bottom:4px">Aniversário</label>
+          <input id="vip-aniversario" class="input-base" type="date" value="${vip ? (vip.aniversario||'') : ''}"/>
+        </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:16px">
         <button onclick="document.getElementById('_vip_modal').remove()" class="btn-ghost flex-1">Cancelar</button>
@@ -6067,6 +6183,7 @@ function salvarVip() {
     endereco:         document.getElementById("vip-end").value.trim(),
     pratos_preferidos: document.getElementById("vip-pratos").value.trim(),
     limite_credito:   parseFloat(document.getElementById("vip-limite").value) || 0,
+    aniversario:      (document.getElementById("vip-aniversario")||{}).value || "",
     saldo_devedor:    id ? (clientesVip.find(v=>v.id===id)||{}).saldo_devedor || 0 : 0,
     criado_em: id ? (clientesVip.find(v=>v.id===id)||{}).criado_em || new Date().toISOString() : new Date().toISOString()
   };
@@ -10368,6 +10485,8 @@ window._injetarPainelQR = function() {
   const panel = document.createElement("div");
   panel.id = "painel-qr-links";
   panel.className = "admin-card mb-4";
+  // Posição fixa: sempre logo ANTES do card estático "Gerar QR Code da
+  // Mesa", formando juntos o 5º card "Links & QR Codes" do Admin.
   panel.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <p class="font-bold text-sm uppercase tracking-widest text-orange-400">🔗 Links & QR Codes</p>
@@ -10384,7 +10503,11 @@ window._injetarPainelQR = function() {
         : "Modo Praia desativado — operação padrão com cardápio único."}
     </p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px" id="qr-cards-grid"></div>`;
-  adminEl.prepend(panel);
+  const qrMesaCardRef = Array.from(adminEl.querySelectorAll(".admin-card")).find(
+    c => c.querySelector("h3") && c.querySelector("h3").textContent.includes("Gerar QR Code da Mesa")
+  );
+  if (qrMesaCardRef) adminEl.insertBefore(panel, qrMesaCardRef);
+  else adminEl.prepend(panel);
 
   _renderQRCards2(configs3, urls);
 };
@@ -10488,9 +10611,12 @@ function _injetarToggleModoPraiaAdmin() {
       <button onclick="imprimirCardapio()" style="background:#0f2340;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.72rem;font-weight:700;cursor:pointer">🖨️ Imprimir Cardápio</button>
     </div>`}`;
 
-  // Inserir antes do painel de QR
-  const qrPanel = document.getElementById("painel-qr-links");
-  if(qrPanel) adminEl.insertBefore(card, qrPanel);
+  // Posição fixa: sempre logo DEPOIS do card estático "Gerar QR Code da
+  // Mesa" (6º card do Admin, após o 5º "Links & QR Codes").
+  const qrMesaCard = Array.from(adminEl.querySelectorAll(".admin-card")).find(
+    c => c.querySelector("h3") && c.querySelector("h3").textContent.includes("Gerar QR Code da Mesa")
+  );
+  if (qrMesaCard) adminEl.insertBefore(card, qrMesaCard.nextSibling);
   else adminEl.prepend(card);
 }
 
@@ -11512,10 +11638,6 @@ function _ccInjetarPainelPerfilEQr() {
       <option value="hibrido">Híbrido — os dois disponíveis</option>
     </select>
 
-    <h3 style="font-weight:800;font-size:.9rem;color:#0f2340;margin-bottom:10px">📷 QR Code de Ativação</h3>
-    <p style="font-size:.74rem;color:#9ca3af;margin-bottom:10px">O garçom escaneia este QR Code uma vez, no celular dele, pra ativar o CookControl neste dispositivo.</p>
-    <div id="cc-qr-ativacao" style="width:180px;height:180px;margin:0 auto 10px"></div>
-    <p style="font-size:.7rem;color:#6b7280;text-align:center;word-break:break-all" id="cc-link-ativacao"></p>
   `;
   const resetCard = adminEl.querySelector('[style*="border-color:#fca5a5"]') || null;
   adminEl.insertBefore(painel, resetCard);
@@ -11586,20 +11708,6 @@ function _ccInjetarPainelPerfilEQr() {
     toast("✅ Perfil de atendimento: " + this.value);
   };
 
-  const empresaId = window.COOKCONTROL_EMPRESA_ID_ATIVA || window.COOKCONTROL_CONFIG.empresaId;
-  const linkAtivacao = window.location.origin + window.location.pathname + "?ativar_empresa=" + encodeURIComponent(empresaId || "");
-  document.getElementById("cc-link-ativacao").textContent = linkAtivacao;
-
-  const desenharQr = () => new QRCode(document.getElementById("cc-qr-ativacao"), {
-    text: linkAtivacao, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M,
-  });
-  if (window.QRCode) desenharQr();
-  else {
-    const s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-    s.onload = desenharQr;
-    document.head.appendChild(s);
-  }
 }
 
 const _renderAdminComPerfilEQr = renderAdmin;
@@ -11892,12 +12000,19 @@ let _ccPedidosPollInterval = null;
 
 function ccModoClienteAtivo() {
   const role = (window.SirAccess && typeof window.SirAccess.getRole === "function") ? window.SirAccess.getRole() : null;
-  return !!S.mesa && role === "cliente";
+  // A grade de 6 botões só pode existir com "?mesa=" de verdade na barra de
+  // endereço agora — S.mesa sozinho não basta (também é usado pelo seletor
+  // manual de mesa no Cardápio, sem nenhuma relação com a tela do cliente).
+  const mesaNaUrl = new URLSearchParams(window.location.search).get("mesa");
+  return !!mesaNaUrl && !!S.mesa && role === "cliente";
 }
 
 function ccIniciarModoCliente() {
   if (!ccModoClienteAtivo()) return;
   document.body.classList.add("cc-modo-cliente");
+  // Oculta completamente o menu superior de gerência (abas + barra de papel)
+  const topbar = document.getElementById("cc-topbar-wrapper");
+  if (topbar) topbar.style.display = "none";
   const header = document.getElementById("cc-cli-header");
   const tabbar = document.getElementById("cc-cli-tabbar");
   if (header) { header.classList.remove("hidden"); const m = document.getElementById("cc-cli-header-mesa"); if (m) m.textContent = String(S.mesa).padStart(2, "0"); }
@@ -11912,6 +12027,7 @@ function ccIniciarModoCliente() {
       const abaAtiva = document.querySelector("#cc-cli-tabbar button.active")?.dataset.tab;
       if (abaAtiva === "pedidos") ccRenderPedidosCliente();
       if (abaAtiva === "conta") ccRenderContaCliente();
+      if (abaAtiva === "fechamento") ccRenderFechamentoCliente();
     }, 5000);
   }
 }
@@ -11930,6 +12046,7 @@ function ccAbaCliente(tab) {
     if (alvo) alvo.classList.add("active");
     if (tab === "pedidos") ccRenderPedidosCliente();
     if (tab === "conta") ccRenderContaCliente();
+    if (tab === "fechamento") ccRenderFechamentoCliente();
   }
   const cf = document.getElementById("cart-footer");
   if (cf) cf.classList.toggle("hide", !mostrarCardapio || cartCount() === 0);
@@ -12000,10 +12117,10 @@ function ccAtualizarTimers() {
   });
 }
 
-function ccRenderContaCliente() {
-  const lista = document.getElementById("cc-conta-lista");
-  const totalEl = document.getElementById("cc-conta-total");
-  const vazio = document.getElementById("cc-conta-vazia");
+function _ccRenderExtratoGenerico(prefixo) {
+  const lista = document.getElementById("cc-" + prefixo + "-lista");
+  const totalEl = document.getElementById("cc-" + prefixo + "-total");
+  const vazio = document.getElementById("cc-" + prefixo + "-vazia");
   if (!lista || !totalEl || !S.mesa) return;
   const linhas = ccContaAtualMesa(S.mesa);
   if (!linhas.length) {
@@ -12034,12 +12151,13 @@ function ccRenderContaCliente() {
   totalEl.textContent = fmtBRL(total);
 }
 
-function ccPedirContaCliente() {
-  if (!S.mesa) return;
-  const linhas = ccContaAtualMesa(S.mesa);
-  if (!linhas.length) { toast("⚠️ Ainda não há pedidos nesta mesa."); return; }
-  const total = linhas.reduce((s, l) => s + (l.total || 0), 0);
-  const recibo = { mesa: S.mesa, total, itens: linhas.flatMap(l => l.itens), data: new Date().toISOString() };
+function ccRenderContaCliente() { _ccRenderExtratoGenerico("conta"); }
+function ccRenderFechamentoCliente() { _ccRenderExtratoGenerico("fechamento"); }
+
+// Encerra a sessão atual da mesa e salva o recibo pessoal do cliente —
+// usado tanto pelo fechamento via Pix quanto pelo fechamento no Fiado VIP.
+function _ccEncerrarMesaComRecibo(total, itens, formaPagamento) {
+  const recibo = { mesa: S.mesa, total, itens, formaPagamento, data: new Date().toISOString() };
 
   // Recibo pessoal — fica salvo no celular do cliente
   salvar("ultimoReciboCliente_" + S.mesa, recibo);
@@ -12056,8 +12174,43 @@ function ccPedirContaCliente() {
 
   const ov = document.getElementById("cc-luz-verde-ov");
   if (ov) ov.classList.add("show");
-  toast(`✅ Conta da Mesa ${String(S.mesa).padStart(2, "0")} encerrada — ${fmtBRL(total)}`);
   ccRenderContaCliente();
+  ccRenderFechamentoCliente();
+}
+
+function ccPedirContaCliente() {
+  if (!S.mesa) return;
+  const linhas = ccContaAtualMesa(S.mesa);
+  if (!linhas.length) { toast("⚠️ Ainda não há pedidos nesta mesa."); return; }
+  const total = linhas.reduce((s, l) => s + (l.total || 0), 0);
+  _ccEncerrarMesaComRecibo(total, linhas.flatMap(l => l.itens), "pix");
+  toast(`✅ Conta da Mesa ${String(S.mesa).padStart(2, "0")} paga via Pix — ${fmtBRL(total)}`);
+}
+
+// Fechamento no Fiado — cobra o total direto no saldo devedor do cliente
+// VIP cadastrado (reaproveita lancaCreditoItem(), já usada no Admin em
+// Contas e Fiados; não altera essa função em nada).
+function ccPedirContaClienteFiado() {
+  if (!S.mesa) return;
+  const statusEl = document.getElementById("cc-vip-status");
+  const tel = (document.getElementById("cc-vip-tel")?.value || "").replace(/\D/g, "");
+  if (!tel) { toast("⚠️ Informe o telefone cadastrado."); return; }
+  const vip = clientesVip.find(v => (v.telefone || "").replace(/\D/g, "") === tel);
+  if (!vip) {
+    if (statusEl) statusEl.innerHTML = `<div class="cc-vip-status" style="background:#fee2e2;color:#991b1b">⛔ Cliente VIP não encontrado. Fale com o atendente.</div>`;
+    return;
+  }
+  const linhas = ccContaAtualMesa(S.mesa);
+  if (!linhas.length) { toast("⚠️ Ainda não há pedidos nesta mesa."); return; }
+  const total = linhas.reduce((s, l) => s + (l.total || 0), 0);
+  const ok = lancaCreditoItem(vip.id, null, total, S.mesa);
+  if (!ok) {
+    if (statusEl) statusEl.innerHTML = `<div class="cc-vip-status" style="background:#fee2e2;color:#991b1b">⛔ Limite de crédito insuficiente. Fale com o atendente.</div>`;
+    return;
+  }
+  if (statusEl) statusEl.innerHTML = `<div class="cc-vip-status" style="background:#dcfce7;color:#15803d">✅ Lançado no fiado de ${vip.nome}.</div>`;
+  _ccEncerrarMesaComRecibo(total, linhas.flatMap(l => l.itens), "fiado_vip:" + vip.nome);
+  toast(`✅ Conta da Mesa ${String(S.mesa).padStart(2, "0")} fechada no fiado de ${vip.nome} — ${fmtBRL(total)}`);
 }
 
 function ccSelecionarNota(n) {
@@ -12085,6 +12238,260 @@ function ccEnviarAvaliacaoCliente() {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   PASSO 3 — REGISTRO DE JORNADA / TROCA DE TURNO / QR DINÂMICO
+   Aditivo: não altera renderAtendente(), lancarPratoQuilo(),
+   setMesaStatus() nem SirAccess — só lê/decora por cima.
+   ═══════════════════════════════════════════════════════════ */
+let turnoAtivo = carregar("turnoAtivo", null);
+
+const TURNO_LABEL = { manha: "🌅 Manhã", tarde: "🌤️ Tarde", noite: "🌙 Noite" };
+
+function ccAtualizarBoxTurno() {
+  const form = document.getElementById("at-turno-form");
+  const resumo = document.getElementById("at-turno-resumo");
+  const badge = document.getElementById("at-turno-ativo-badge");
+  if (!form || !resumo) return;
+  const ativo = !!turnoAtivo;
+  form.classList.toggle("hidden", ativo);
+  resumo.classList.toggle("hidden", !ativo);
+  if (badge) badge.classList.toggle("hidden", !ativo);
+  if (ativo) {
+    const nomeEl = document.getElementById("at-turno-resumo-nome");
+    const infoEl = document.getElementById("at-turno-resumo-info");
+    if (nomeEl) nomeEl.textContent = turnoAtivo.nome;
+    if (infoEl) infoEl.textContent = `${TURNO_LABEL[turnoAtivo.turno] || turnoAtivo.turno} · Entrada ${turnoAtivo.horaEntrada} · ${turnoAtivo.telefone}`;
+  }
+  // Bloqueia o resto do painel enquanto a jornada não é registrada
+  ["atend-quilo-box"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.opacity = ativo ? "1" : ".35";
+  });
+  document.querySelectorAll("#atend-quilo-box input, #atend-quilo-box select, #atend-quilo-box button").forEach(el => {
+    el.disabled = !ativo;
+  });
+}
+
+function ccSalvarTurno() {
+  const nome = (document.getElementById("at-turno-nome")?.value || "").trim();
+  const tel = (document.getElementById("at-turno-tel")?.value || "").trim();
+  const periodo = document.getElementById("at-turno-periodo")?.value || "";
+  const hora = document.getElementById("at-turno-hora")?.value || "";
+  if (!nome || !tel || !periodo || !hora) { toast("⚠️ Preencha nome, telefone, turno e horário de entrada."); return; }
+  turnoAtivo = { nome, telefone: tel, turno: periodo, horaEntrada: hora, iniciadoEm: new Date().toISOString() };
+  salvar("turnoAtivo", turnoAtivo);
+  ccAtualizarBoxTurno();
+  toast(`✅ Turno de ${nome} iniciado!`);
+}
+
+function ccEncerrarTurno() {
+  // Limpa os dados do aparelho para o próximo garçom registrar o dele —
+  // não mexe em pedidos, mesas ou histórico, só na identificação do turno.
+  turnoAtivo = null;
+  salvar("turnoAtivo", null);
+  const nomeInput = document.getElementById("at-turno-nome");
+  const telInput = document.getElementById("at-turno-tel");
+  const periodoInput = document.getElementById("at-turno-periodo");
+  const horaInput = document.getElementById("at-turno-hora");
+  if (nomeInput) nomeInput.value = "";
+  if (telInput) telInput.value = "";
+  if (periodoInput) periodoInput.value = "";
+  if (horaInput) horaInput.value = "";
+  ccAtualizarBoxTurno();
+  toast("🔚 Turno encerrado. Aparelho liberado para o próximo atendente.");
+}
+
+// ─── FLUXO DINÂMICO VIA QR: aparelho já logado como atendente que
+// escaneia o QR de uma mesa se conecta direto àquela comanda, em vez de
+// cair na tela do cliente. Não interfere no fluxo normal do cliente.
+function ccDetectarMesaViaQRAtendente() {
+  const params = new URLSearchParams(window.location.search);
+  const mesaUrl = params.get("mesa");
+  if (!mesaUrl || !turnoAtivo) return false;
+  const num = parseInt(mesaUrl, 10);
+  if (!num) return false;
+  // Aparelho já é de um atendente em turno: ignora role=cliente da URL do
+  // QR e conecta direto ao atendimento daquela mesa.
+  if (window.SirAccess && typeof window.SirAccess.setRole === "function") {
+    window.SirAccess.setRole("atendente");
+  }
+  S.mesa = num;
+  setTimeout(() => {
+    showView("atendente", document.querySelector('.nav-tab[data-view="atendente"]'));
+    const sel = document.getElementById("kg-mesa-select");
+    if (sel) { sel.value = String(num); }
+    const box = document.getElementById("atend-quilo-box");
+    if (box) box.scrollIntoView({ behavior: "smooth", block: "start" });
+    toast(`🔗 Conectado à Mesa ${String(num).padStart(2, "0")}`);
+  }, 250);
+  return true;
+}
+
+
+// ─── Decora os cards de "Situação das Mesas" com horário de entrada e a
+// sequência cronológica dos pratos — sem tocar em renderAtendente() em si.
+function _ccDecorarCardsMesaAtendente() {
+  const grid = document.getElementById("at-mesas-grid");
+  if (!grid) return;
+  grid.querySelectorAll(".admin-card").forEach(card => {
+    const titulo = card.querySelector("span.font-black");
+    if (!titulo) return;
+    const m = titulo.textContent.match(/Mesa\s+(\d+)/);
+    if (!m) return;
+    const num = parseInt(m[1], 10);
+    const desde = mesaSessaoInicio[num] ? new Date(mesaSessaoInicio[num]) : null;
+    const horaTxt = desde ? desde.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—";
+    const seq = (typeof ccPedidosDaMesa === "function" ? ccPedidosDaMesa(num) : []).slice().reverse();
+    const seqTxt = seq.length
+      ? seq.map((l, i) => `${i + 1}ª ${l.label.replace(/^\S+\s/, "")}`).join(" → ")
+      : "Sem pedidos lançados ainda";
+    // Cronômetro ativo (segundos e minutos reais) — mesmo motor de tick do
+    // Passo 2 (ccAtualizarTimers, já roda a cada 1s), só reaproveitado aqui
+    // pra ditar prioridade de atendimento no mapa do salão.
+    const timerHtml = desde
+      ? `<span class="cc-timer" data-inicio="${desde.toISOString()}" data-parado="0">⏱ 00:00</span>`
+      : `<span class="cc-timer">⏱ —</span>`;
+    card.insertAdjacentHTML("beforeend", `
+      <div style="border-top:1px dashed #e5e7eb;margin-top:10px;padding-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <p style="font-size:.68rem;color:#9ca3af">🕐 Mesa aberta desde <strong style="color:#0f2340">${horaTxt}</strong></p>
+        ${timerHtml}
+      </div>
+      <p style="font-size:.68rem;color:#9ca3af;margin-top:2px">📶 Sequência: ${seqTxt}</p>
+    `);
+  });
+  if (typeof ccAtualizarTimers === "function") ccAtualizarTimers();
+}
+if (!window._ccTimerInterval) {
+  window._ccTimerInterval = setInterval(() => { if (typeof ccAtualizarTimers === "function") ccAtualizarTimers(); }, 1000);
+}
+
+// Desenha o QR de Ativação uma única vez (idempotente) no topo do Atendente
+function _ccDesenharQrAtivacaoAtendente() {
+  const box = document.getElementById("cc-qr-ativacao");
+  if (!box || box.dataset.desenhado) return;
+  const empresaId = window.COOKCONTROL_EMPRESA_ID_ATIVA || window.COOKCONTROL_CONFIG.empresaId;
+  const linkAtivacao = window.location.origin + window.location.pathname + "?ativar_empresa=" + encodeURIComponent(empresaId || "");
+  const linkEl = document.getElementById("cc-link-ativacao");
+  if (linkEl) linkEl.textContent = linkAtivacao;
+  const desenharQr = () => { new QRCode(box, { text: linkAtivacao, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M }); box.dataset.desenhado = "1"; };
+  if (window.QRCode) desenharQr();
+  else {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+    s.onload = desenharQr;
+    document.head.appendChild(s);
+  }
+}
+
+const _renderAtendenteOrig = renderAtendente;
+renderAtendente = function() {
+  _renderAtendenteOrig();
+  ccAtualizarBoxTurno();
+  _ccDecorarCardsMesaAtendente();
+  _ccDesenharQrAtivacaoAtendente();
+};
+
+
+
+/* ═══════════════════════════════════════════════════════════
+   PASSO 3 (parte 2) — IMPRESSÃO AUTOMÁTICA DE PRODUÇÃO
+   Aditivo: não altera enviarPedido() nem imprimirComanda() —
+   só dispara por cima, depois que o pedido já foi registrado.
+   ═══════════════════════════════════════════════════════════ */
+function imprimirComandaProducaoAuto(registro) {
+  if (!registro) return;
+  const agora = new Date(registro.data || Date.now()).toLocaleString("pt-BR");
+  const atendenteNome = (typeof turnoAtivo !== "undefined" && turnoAtivo) ? turnoAtivo.nome : "Cliente (Autoatendimento)";
+  let c = `<div style="text-align:center;margin-bottom:10px">`;
+  c += `<strong>COMANDA DE PRODUÇÃO</strong><br/>`;
+  c += `<small>${config.nome || ""}</small><br/>`;
+  c += `<small>${agora}</small></div>`;
+  c += `<div style="border-top:1px dashed #000;border-bottom:1px dashed #000;padding:6px 0;margin:8px 0;text-align:center">`;
+  c += `<strong style="font-size:18px">MESA ${String(registro.mesa).padStart(2, "0")}</strong></div>`;
+  c += `<div style="font-size:12px;margin-bottom:6px">Atendente: <strong>${atendenteNome}</strong></div>`;
+  c += `<table style="width:100%;font-size:13px;border-collapse:collapse">`;
+  c += `<tr><th style="text-align:left">Item</th><th>Qtd</th></tr>`;
+  (registro.itens || []).forEach(it => {
+    c += `<tr><td>${it.nome}</td><td style="text-align:center">${it.q}</td></tr>`;
+  });
+  c += `</table>`;
+  if (registro.obs) c += `<div style="margin-top:6px;border-top:1px dashed #000;padding-top:4px">Obs: ${registro.obs}</div>`;
+  c += `<div style="text-align:center;margin-top:12px">🍽️ Enviar para a cozinha/copa</div>`;
+  const pc = document.getElementById("print-content");
+  if (pc) { pc.innerHTML = c; window.print(); }
+}
+
+// Relatório de Turnos e Comissões — soma vendas de HOJE por atendente,
+// lendo o campo "atendente" marcado em enviarPedido()/lancarPratoQuilo().
+function renderComissoesEquipe() {
+  const tbody = document.getElementById("rel-comissoes-tbody");
+  const vazio = document.getElementById("rel-comissoes-vazio");
+  if (!tbody) return;
+  const hojeStr = new Date().toDateString();
+  const porAtendente = {};
+  historico.forEach(h => {
+    if (!h.atendente) return;
+    if (new Date(h.data).toDateString() !== hojeStr) return;
+    if (!porAtendente[h.atendente]) porAtendente[h.atendente] = { total: 0, pedidos: 0 };
+    porAtendente[h.atendente].total += h.total || 0;
+    porAtendente[h.atendente].pedidos += 1;
+  });
+  const nomes = Object.keys(porAtendente);
+  if (!nomes.length) {
+    tbody.innerHTML = "";
+    vazio?.classList.remove("hidden");
+    return;
+  }
+  vazio?.classList.add("hidden");
+  tbody.innerHTML = nomes.map(nome => {
+    const d = porAtendente[nome];
+    const comissao = d.total * 0.10;
+    return `<tr style="border-bottom:1px solid #f3f4f6">
+      <td style="padding:6px 8px;font-weight:700;color:#0f2340">${nome}</td>
+      <td style="padding:6px 8px;text-align:center">${d.pedidos}</td>
+      <td style="padding:6px 8px;text-align:right">${fmtBRL(d.total)}</td>
+      <td style="padding:6px 8px;text-align:right;color:#15803d;font-weight:700">${fmtBRL(comissao)}</td>
+      <td style="padding:6px 8px;text-align:right;color:#9ca3af">— sem coleta ainda</td>
+    </tr>`;
+  }).join("");
+}
+
+const _renderRelatorioOrig = renderRelatorio;
+renderRelatorio = function() {
+  _renderRelatorioOrig();
+  renderComissoesEquipe();
+};
+
+const _lancarPratoQuiloOrig = lancarPratoQuilo;
+lancarPratoQuilo = function() {
+  const tamanhoAntes = historico.length;
+  _lancarPratoQuiloOrig();
+  if (historico.length > tamanhoAntes && typeof turnoAtivo !== "undefined" && turnoAtivo) {
+    historico[0].atendente = turnoAtivo.nome;
+    salvar("historico", historico);
+  }
+};
+
+const _enviarPedidoOrig = enviarPedido;
+enviarPedido = function() {
+  const tamanhoAntes = historico.length;
+  _enviarPedidoOrig();
+  if (historico.length > tamanhoAntes) {
+    // Marca quem atendeu, pra alimentar o Relatório de Turnos e Comissões —
+    // não mexe em nenhum outro campo do registro.
+    historico[0].atendente = (typeof turnoAtivo !== "undefined" && turnoAtivo) ? turnoAtivo.nome : null;
+    salvar("historico", historico);
+    // Se a config de impressão automática está ligada, dispara o disparo
+    // térmico com mesa/hora/itens/atendente.
+    if (config.imprimirComanda) imprimirComandaProducaoAuto(historico[0]);
+  }
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => { ccAtualizarBoxTurno(); ccDetectarMesaViaQRAtendente(); }, 400);
+});
+setTimeout(() => { ccAtualizarBoxTurno(); ccDetectarMesaViaQRAtendente(); }, 1000);
+
+/* ═══════════════════════════════════════════════════════════
    ABA "CLIENTES" UNIFICADA (Cadastro / Contas e Fiados / Feedbacks)
    Aditivo: não altera renderVips(), renderContasReceber() nem
    _renderHistoricoCredito() — só reorganiza a navegação por cima.
@@ -12095,39 +12502,75 @@ function ccEnviarAvaliacaoCliente() {
     const btnContas = document.querySelector('.nav-tab[data-view="contas"]');
     const viewVip = document.getElementById("view-vip");
     const viewContas = document.getElementById("view-contas");
+    const viewMonitor = document.getElementById("view-cliente");
     if (!btnVip || !btnContas || !viewVip || !viewContas) { setTimeout(montar, 500); return; }
-    if (document.getElementById("cc-clientes-subnav")) return;
+    if (document.getElementById("view-clientes-unificado")) return;
 
     btnVip.textContent = "👥 Clientes";
     btnContas.style.display = "none";
+    // Página única de scroll contínuo — sem sub-abas escondidas. O
+    // simulador antigo (Monitor/Preview de Mesas) some da navegação por
+    // completo, como pedido — o painel view-cliente continua no código,
+    // só não é mais aberto por aqui.
+    viewVip.classList.add("hidden");
+    viewContas.classList.add("hidden");
+    if (viewMonitor) viewMonitor.classList.add("hidden");
 
-    const sub = document.createElement("div");
-    sub.id = "cc-clientes-subnav";
-    sub.style.cssText = "display:none;gap:8px;margin:0 16px 14px;flex-wrap:wrap;max-width:48rem";
-    sub.innerHTML = `
-      <button class="cc-sub-btn active" data-sub="cadastro" onclick="ccSubAbaClientes('cadastro')">📋 Cadastro</button>
-      <button class="cc-sub-btn" data-sub="contas" onclick="ccSubAbaClientes('contas')">💳 Contas e Fiados</button>
-      <button class="cc-sub-btn" data-sub="feedbacks" onclick="ccSubAbaClientes('feedbacks')">💬 Feedbacks</button>
-    `;
-    viewVip.parentNode.insertBefore(sub, viewVip);
+    const pagina = document.createElement("div");
+    pagina.id = "view-clientes-unificado";
+    pagina.className = "hidden p-4 max-w-3xl mx-auto pb-10";
+    pagina.innerHTML = `
+      <div class="admin-card mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 style="font-weight:800;font-size:.9rem;color:#0f2340">📋 Cadastro & Limites de Fiado VIP</h3>
+          <button onclick="abrirModalVip()" class="btn-primary" style="padding:8px 14px;font-size:.76rem">+ Novo Cliente</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+            <thead>
+              <tr style="border-bottom:2px solid #e5e7eb;text-align:left">
+                <th style="padding:6px 8px">Nome</th>
+                <th style="padding:6px 8px">Telefone</th>
+                <th style="padding:6px 8px">Aniversário</th>
+                <th style="padding:6px 8px;text-align:right">Saldo Devedor</th>
+                <th style="padding:6px 8px"></th>
+              </tr>
+            </thead>
+            <tbody id="cc-clientes-tbody"></tbody>
+          </table>
+          <p id="cc-clientes-vazio" class="hidden text-center text-gray-400 text-sm py-8">Nenhum cliente cadastrado ainda.</p>
+        </div>
+      </div>
 
-    const painelFeed = document.createElement("div");
-    painelFeed.id = "view-feedbacks-cc";
-    painelFeed.className = "hidden p-4 max-w-3xl mx-auto pb-10";
-    painelFeed.innerHTML = `
-      <h2 class="serif text-lg mb-3" style="color:#0f2340">💬 Painel de Feedbacks</h2>
-      <div id="cc-feedbacks-lista"></div>
+      <div class="admin-card mb-4">
+        <h3 style="font-weight:800;font-size:.9rem;color:#0f2340;margin-bottom:10px">📅 Agenda, Reservas de Mesas e Eventos</h3>
+        <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;margin-bottom:12px">
+          <input id="cc-res-nome" class="input-base" placeholder="Nome do cliente">
+          <input id="cc-res-tel" class="input-base" placeholder="Telefone">
+          <input id="cc-res-data" class="input-base" type="date">
+          <input id="cc-res-hora" class="input-base" type="time">
+          <input id="cc-res-obs" class="input-base" style="grid-column:1/-1" placeholder="Evento/observação (ex: aniversário, 8 pessoas)">
+        </div>
+        <button onclick="ccAdicionarReserva()" class="btn-primary w-full">📌 Adicionar Reserva</button>
+        <div id="cc-reservas-lista" class="mt-4"></div>
+        <p id="cc-reservas-vazio" class="hidden text-center text-gray-400 text-sm py-6">Nenhuma reserva agendada.</p>
+      </div>
+
+      <div class="admin-card">
+        <h3 style="font-weight:800;font-size:.9rem;color:#0f2340;margin-bottom:10px">💬 Mural de Feedbacks</h3>
+        <div id="cc-feedbacks-lista"></div>
+      </div>
     `;
-    viewContas.parentNode.insertBefore(painelFeed, viewContas.nextSibling);
+    viewVip.parentNode.insertBefore(pagina, viewVip);
 
     const _swAnterior = showView;
     showView = function(name, b) {
       _swAnterior(name, b);
-      const ativo = (name === "vip");
-      sub.style.display = ativo ? "flex" : "none";
-      if (ativo) {
-        const atual = document.querySelector(".cc-sub-btn.active")?.dataset.sub || "cadastro";
-        ccSubAbaClientes(atual);
+      pagina.classList.toggle("hidden", name !== "vip");
+      if (name === "vip") {
+        renderClientesTabelaUnificada();
+        ccRenderReservas();
+        ccRenderFeedbacksPainel();
       }
     };
   }
@@ -12135,20 +12578,79 @@ function ccEnviarAvaliacaoCliente() {
   setTimeout(montar, 1500);
 })();
 
-function ccSubAbaClientes(sub) {
-  document.querySelectorAll(".cc-sub-btn").forEach(b => b.classList.toggle("active", b.dataset.sub === sub));
-  const viewVip = document.getElementById("view-vip");
-  const viewContas = document.getElementById("view-contas");
-  const viewFeed = document.getElementById("view-feedbacks-cc");
-  if (viewVip) viewVip.classList.toggle("hidden", sub !== "cadastro");
-  if (viewContas) viewContas.classList.toggle("hidden", sub !== "contas");
-  if (viewFeed) viewFeed.classList.toggle("hidden", sub !== "feedbacks");
-  if (sub === "cadastro" && typeof renderVips === "function") renderVips();
-  if (sub === "contas") {
-    if (typeof renderContasReceber === "function") renderContasReceber();
-    if (typeof _renderHistoricoCredito === "function") _renderHistoricoCredito();
+// Tabela unificada Cadastro + Saldo Devedor — só LÊ clientesVip (não recria
+// o cadastro), reaproveitando abrirModalVip()/salvarVip() já existentes.
+function renderClientesTabelaUnificada() {
+  const tbody = document.getElementById("cc-clientes-tbody");
+  const vazio = document.getElementById("cc-clientes-vazio");
+  if (!tbody) return;
+  if (!clientesVip.length) {
+    tbody.innerHTML = "";
+    vazio?.classList.remove("hidden");
+    return;
   }
-  if (sub === "feedbacks") ccRenderFeedbacksPainel();
+  vazio?.classList.add("hidden");
+  tbody.innerHTML = clientesVip.map(v => {
+    const aniv = v.aniversario ? new Date(v.aniversario + "T00:00:00").toLocaleDateString("pt-BR") : "—";
+    const saldo = v.saldo_devedor || 0;
+    return `<tr style="border-bottom:1px solid #f3f4f6">
+      <td style="padding:6px 8px;font-weight:700;color:#0f2340">${v.nome}</td>
+      <td style="padding:6px 8px">${v.telefone || "—"}</td>
+      <td style="padding:6px 8px">${aniv}</td>
+      <td style="padding:6px 8px;text-align:right;font-weight:700;color:${saldo > 0 ? "#dc2626" : "#15803d"}">${fmtBRL(saldo)}</td>
+      <td style="padding:6px 8px;text-align:right"><button onclick="abrirModalVip('${v.id}')" class="btn-ghost" style="padding:4px 10px;font-size:.7rem">Editar</button></td>
+    </tr>`;
+  }).join("");
+}
+
+// Agenda/Reservas — novo módulo simples e independente (não mexe em mesas
+// nem em pedidos: é só uma lista de compromissos futuros do salão).
+let reservasSalao = carregar("reservasSalao", []);
+
+function ccAdicionarReserva() {
+  const nome = (document.getElementById("cc-res-nome")?.value || "").trim();
+  const tel = (document.getElementById("cc-res-tel")?.value || "").trim();
+  const data = document.getElementById("cc-res-data")?.value || "";
+  const hora = document.getElementById("cc-res-hora")?.value || "";
+  const obs = (document.getElementById("cc-res-obs")?.value || "").trim();
+  if (!nome || !data) { toast("⚠️ Informe ao menos o nome e a data."); return; }
+  reservasSalao.push({ id: "RES_" + Date.now(), nome, telefone: tel, data, hora, obs });
+  reservasSalao.sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora));
+  salvar("reservasSalao", reservasSalao);
+  ["cc-res-nome", "cc-res-tel", "cc-res-data", "cc-res-hora", "cc-res-obs"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  ccRenderReservas();
+  toast("✅ Reserva adicionada!");
+}
+
+function ccRemoverReserva(id) {
+  reservasSalao = reservasSalao.filter(r => r.id !== id);
+  salvar("reservasSalao", reservasSalao);
+  ccRenderReservas();
+}
+
+function ccRenderReservas() {
+  const wrap = document.getElementById("cc-reservas-lista");
+  const vazio = document.getElementById("cc-reservas-vazio");
+  if (!wrap) return;
+  const hojeStr = new Date().toISOString().slice(0, 10);
+  const futuras = reservasSalao.filter(r => r.data >= hojeStr);
+  if (!futuras.length) {
+    wrap.innerHTML = "";
+    vazio?.classList.remove("hidden");
+    return;
+  }
+  vazio?.classList.add("hidden");
+  wrap.innerHTML = futuras.map(r => {
+    const dataTxt = new Date(r.data + "T00:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+    return `<div class="cc-timeline-card">
+      <div class="flex items-center justify-between mb-1">
+        <span style="font-weight:700;color:#0f2340">${dataTxt}${r.hora ? " · " + r.hora : ""}</span>
+        <button onclick="ccRemoverReserva('${r.id}')" style="color:#dc2626;font-size:.7rem;font-weight:700;background:none;border:none;cursor:pointer">Remover</button>
+      </div>
+      <p class="text-sm text-gray-700">${r.nome}${r.telefone ? " · " + r.telefone : ""}</p>
+      ${r.obs ? `<p class="text-xs text-gray-400 mt-1">${r.obs}</p>` : ""}
+    </div>`;
+  }).join("");
 }
 
 function ccRenderFeedbacksPainel() {
