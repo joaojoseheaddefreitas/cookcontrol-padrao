@@ -5,7 +5,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Barraca Sol da Bahia</title>
 <!-- PWA -->
-<link href="https://preview--layout-lovely-lite.lovable.app/manifest.json" rel="manifest">
+
 <meta content="#0f2340" name="theme-color">
 <meta content="yes" name="mobile-web-app-capable">
 <meta content="yes" name="apple-mobile-web-app-capable">
@@ -20,7 +20,7 @@
      2. Supabase recebe cópia assíncrona de cada salvar()
      3. Na inicialização, tenta carregar do Supabase se localStorage vazio
      ═══════════════════════════════════════════════════════════════ -->
-<script src="./supabase.min.js.download"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════
    CONFIGURAÇÃO DA INSTÂNCIA — ÚNICO PONTO A EDITAR POR CLIENTE
@@ -5701,7 +5701,7 @@ function syncHistoricoCozinha() {
   historico.forEach(ped => {
     if(!pedidosCozinha.find(p=>p.id===ped.id)) {
       pedidosCozinha.unshift({
-        id:ped.id, data:ped.data, mesa:ped.mesa,
+        id:ped.id, numero:ped.numero, nome:ped.nome||"", data:ped.data, mesa:ped.mesa,
         itens:ped.itens, total:ped.total, pag:ped.pag,
         obs:ped.obs||"", status:"pendente"
       });
@@ -5959,6 +5959,7 @@ function renderAtendente() {
       </div>
       <p class="text-xs font-bold mb-2" style="color:${borderCor}">${statusPedLabel}</p>
       ${ultimoPed?`
+        ${ultimoPed.numero?`<p class="text-xs font-black mb-1" style="color:#0f2340">#${ultimoPed.numero}${ultimoPed.nome?" · "+ultimoPed.nome:""}</p>`:""}
         <div class="text-xs text-gray-500 mb-1 leading-relaxed">
           ${ultimoPed.itens.slice(0,3).map(i=>`${i.q}× ${i.nome}`).join(" · ")}${ultimoPed.itens.length>3?"…":""}
         </div>
